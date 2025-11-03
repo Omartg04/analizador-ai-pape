@@ -1,7 +1,7 @@
 # ===============================
 # Núcleo científico y manejo de datos
 # ===============================
-numpy==1.26.4
+numpy==2.5.6
 pandas==2.2.3
 # PyArrow solo con rueda binaria, evita compilación en el host
 pyarrow==14.0.2 --only-binary :all:
