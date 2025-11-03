@@ -15,4 +15,5 @@ python-dotenv==1.0.1
 # Modelos de lenguaje y AI
 openai==1.51.2
 
-
+# PDF y reportes
+reportlab==4.2.5
