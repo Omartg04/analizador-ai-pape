@@ -1248,11 +1248,10 @@ class GeneradorTablas:
 # ============================================================================
 class AgenteAnaliticoLLM:
     """Agente que usa LLM + Function Calling con sistema de robustez mejorado - VERSIÓN ACTUALIZADA"""
-    
     def __init__(self, df_completo, api_key: str):
         self.df = df_completo
         self.analizador = AnalizadorUnidimensional(df_completo)
-        self.client = OpenAI(api_key=api_key, base_url="https://api.deepseek.com")
+        self.client = OpenAI(api_key=api_key, base_url="https://api.deepseek.com/v1", http_client=None)
         
         # === PASO 1: CALCULAR CIFRAS REALES ===
         total_personas = len(df_completo)
