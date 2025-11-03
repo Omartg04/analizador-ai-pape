@@ -14,9 +14,6 @@ build/
 .streamlit/secrets.toml
 .streamlit/cache/
 
-# Datos
-data/01_data/*.csv
-
 # IDE
 .vscode/
 .idea/
@@ -30,3 +27,7 @@ Thumbs.db
 # Env
 .env
 .env.local
+
+# Secrets
+.streamlit/secrets.toml
+secrets.toml
