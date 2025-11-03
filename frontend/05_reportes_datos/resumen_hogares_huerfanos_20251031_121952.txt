@@ -1,0 +1,32 @@
+
+================================================================================
+REPORTE DE HOGARES HUÉRFANOS
+================================================================================
+Fecha: 2025-10-31 12:19:52
+
+RESUMEN
+================================================================================
+Hogares huérfanos encontrados: 90
+Personas en hogares huérfanos: 333
+Porcentaje de personas: 1.02%
+
+DEFINICIÓN
+Un hogar "huérfano" existe en CaracteristicasPersona.csv pero NO en 
+CaracteristicasHogar.csv. Fueron eliminados por integridad de datos.
+
+DISTRIBUCIÓN POR SEXO
+Mujeres: 159 (47.7%)
+Hombres: 174 (52.3%)
+
+DISTRIBUCIÓN POR EDAD
+Edad mínima: 0 años
+Edad máxima: 61616 años
+Edad promedio: 225.9 años
+
+ARCHIVOS GENERADOS
+1. hogares_huerfanos_ids_20251031_121952.csv
+2. personas_en_hogares_huerfanos_20251031_121952.csv
+3. estadisticas_hogares_huerfanos_20251031_121952.csv
+4. resumen_hogares_huerfanos_20251031_121952.txt
+
+================================================================================

@@ -1,0 +1,334 @@
+id_hogar,id_persona,edad_persona,sexo_persona,parentesco_persona,tipo_persona
+2767159,27671591,62,Hombre,Jefa o jefe,p1
+2767159,27671592,61,Hombre,Jefa o jefe,p2
+2767159,27671593,15,Mujer,Hija(o),p3
+2767179,27671791,41,Mujer,Esposa(o) o pareja,p1
+2767179,27671792,42,Hombre,Esposa(o) o pareja,p2
+2767179,27671793,21,Mujer,Hija(o),p3
+2767179,27671794,18,Hombre,Hija(o),p4
+2767180,27671801,70,Hombre,Jefa o jefe,p1
+2767181,27671815,5,Hombre,Hija(o),p5
+2767181,27671814,7,Hombre,Hija(o),p4
+2767181,27671811,31,Mujer,Jefa o jefe,p1
+2767181,27671812,35,Hombre,Esposa(o) o pareja,p2
+2767181,27671813,10,Hombre,Hija(o),p3
+2767228,27672281,64,Hombre,Esposa(o) o pareja,p1
+2767228,27672282,57,Mujer,Jefa o jefe,p2
+2767229,27672291,63,Hombre,Jefa o jefe,p1
+2767237,27672375,28,Hombre,Hija(o),p5
+2767237,27672374,52,Mujer,Jefa o jefe,p4
+2767237,27672373,65,Hombre,Jefa o jefe,p3
+2767237,27672372,22,Mujer,Hija(o),p2
+2767237,27672371,28,Hombre,Hija(o),p1
+2767302,27673021,60,Hombre,Jefa o jefe,p1
+2767302,27673022,57,Mujer,Jefa o jefe,p2
+2767302,27673023,16,Mujer,Hija(o),p3
+2767304,27673045,7,Hombre,Esposa(o) o pareja,p5
+2767304,27673043,23,Hombre,Hija(o),p3
+2767304,27673044,24,Mujer,Jefa o jefe,p4
+2767304,27673041,53,Hombre,Jefa o jefe,p1
+2767304,27673042,52,Hombre,Jefa o jefe,p2
+2767383,27673831,39,Mujer,Hija(o),p1
+2767383,27673832,31,Mujer,Hija(o),p2
+2767383,27673833,24,Hombre,Otro parentesco,p3
+2767383,27673834,18,Hombre,Otro parentesco,p4
+2767383,27673835,18,Mujer,Hija(o),p5
+2767383,27673836,6,Hombre,Hija(o),p6
+2767388,27673885,21,Hombre,Hija(o),p5
+2767388,27673884,20,Mujer,Hija(o),p4
+2767388,27673886,80,Mujer,Madre o padre,p6
+2767388,27673882,60,Hombre,Esposa(o) o pareja,p2
+2767388,27673881,55,Mujer,Jefa o jefe,p1
+2767388,27673883,35,Mujer,Hija(o),p3
+2767393,27673931,62,Mujer,Esposa(o) o pareja,p1
+2767393,27673932,64,Hombre,Esposa(o) o pareja,p2
+2767394,27673941,31,Mujer,Jefa o jefe,p1
+2767394,27673942,12,Hombre,Hija(o),p2
+2767394,27673943,11,Hombre,Hija(o),p3
+2767395,27673951,43,Hombre,Jefa o jefe,p1
+2767395,27673952,36,Mujer,Esposa(o) o pareja,p2
+2767395,27673953,18,Hombre,Hija(o),p3
+2767395,27673954,10,Mujer,Hija(o),p4
+2767396,27673968,11,Mujer,Nieta(o),p8
+2767396,27673967,21,Hombre,Nieta(o),p7
+2767396,27673966,24,Hombre,Nieta(o),p6
+2767396,27673965,33,Hombre,Nuera o yerno,p5
+2767396,27673961,71,Mujer,Jefa o jefe,p1
+2767396,27673963,43,Hombre,Hija(o),p3
+2767396,27673962,52,Hombre,Hija(o),p2
+2767396,27673964,33,Mujer,Hija(o),p4
+2767477,27674777,19,Mujer,Nieta(o),p6
+2767477,27674779,25,Hombre,Nieta(o),p8
+2767477,276747710,18,Mujer,Nieta(o),p9
+2767477,27674778,17,Hombre,Nieta(o),p7
+2767477,27674776,41,Mujer,Hija(o),p5
+2767477,27674772,17,Mujer,Nieta(o),p10
+2767477,27674774,44,Mujer,Hija(o),p3
+2767477,27674773,56,Mujer,Hija(o),p2
+2767477,27674771,72,Mujer,Jefa o jefe,p1
+2767477,27674775,44,Hombre,Nuera o yerno,p4
+2767481,27674814,42,Hombre,Hija(o),p4
+2767481,27674813,44,Hombre,Hija(o),p3
+2767481,27674815,36,Hombre,Hija(o),p5
+2767481,27674811,65,Mujer,Jefa o jefe,p1
+2767481,27674812,68,Hombre,Jefa o jefe,p2
+2767532,27675321,25,Mujer,Esposa(o) o pareja,p1
+2767532,27675322,2,Hombre,Hija(o),p2
+2767535,27675351,47,Hombre,Jefa o jefe,p1
+2767535,27675352,27,Mujer,Esposa(o) o pareja,p2
+2767535,27675353,4,Mujer,Hija(o),p3
+2767637,27676373,63,Mujer,Jefa o jefe,p3
+2767637,27676371,14,Mujer,Nieta(o),p1
+2767637,27676372,13,Hombre,Nieta(o),p2
+2767639,27676392,7,Mujer,Hija(o),p2
+2767639,27676393,0,Hombre,Hija(o),p3
+2767639,27676391,26,Mujer,Jefa o jefe,p1
+2767676,27676761,67,Hombre,Jefa o jefe,p1
+2767676,27676762,65,Hombre,Otro parentesco,p2
+2767676,27676763,59,Mujer,Otro parentesco,p3
+2767676,27676764,56,Hombre,Otro parentesco,p4
+2767686,27676861,60,Mujer,Esposa(o) o pareja,p1
+2767686,27676862,65,Hombre,Esposa(o) o pareja,p2
+2767686,27676863,23,Hombre,Hija(o),p3
+2767689,27676895,58,Hombre,Otro parentesco,p5
+2767689,27676893,28,Hombre,Hija(o),p3
+2767689,27676894,26,Hombre,Hija(o),p4
+2767689,27676891,54,Mujer,Jefa o jefe,p1
+2767689,27676892,57,Hombre,Esposa(o) o pareja,p2
+2767690,27676901,25,Mujer,Otro parentesco,bebe1
+2767690,27676902,85,Mujer,Madre o padre,p1
+2767690,27676903,65,Mujer,Otro parentesco,p2
+2767690,27676904,66,Hombre,Otro parentesco,p3
+2767690,27676905,62,Hombre,Jefa o jefe,p4
+2767690,27676906,40,Mujer,Otro parentesco,p5
+2767690,27676907,39,Mujer,Otro parentesco,p6
+2767690,27676908,38,Mujer,Otro parentesco,p7
+2767692,27676924,55,Hombre,Jefa o jefe,p4
+2767692,27676923,15,Hombre,Nieta(o),p3
+2767692,27676921,56,Mujer,Esposa(o) o pareja,p1
+2767692,27676922,35,Mujer,Hija(o),p2
+2767693,27676931,65,Mujer,Otro parentesco,p1
+2767693,27676932,62,Hombre,Otro parentesco,p2
+2767693,27676933,62,Mujer,Esposa(o) o pareja,p3
+2767693,27676934,67,Hombre,Otro parentesco,p4
+2767693,27676935,45,Mujer,Otro parentesco,p5
+2767693,27676936,59,Hombre,Jefa o jefe,p6
+2767925,27679253,38,Mujer,Hija(o),p3
+2767925,27679256,12,Mujer,Nieta(o),p6
+2767925,27679255,14,Hombre,Nieta(o),p5
+2767925,27679252,59,Mujer,Esposa(o) o pareja,p2
+2767925,27679251,62,Hombre,Jefa o jefe,p1
+2767925,27679254,37,Hombre,Hija(o),p4
+2768136,27681363,25,Mujer,Hija(o),p3
+2768136,27681361,55,Hombre,Jefa o jefe,p1
+2768136,27681362,55,Mujer,Esposa(o) o pareja,p2
+2768136,27681364,52,Mujer,Hija(o),p4
+2768299,27682994,12,Mujer,Hija(o),p4
+2768299,27682992,69,Hombre,Otro parentesco,p2
+2768299,27682991,44,Mujer,Jefa o jefe,p1
+2768299,27682993,45,Hombre,Otro parentesco,p3
+2773011,27730111,41,Hombre,Jefa o jefe,p1
+2773011,27730112,43,Mujer,Jefa o jefe,p2
+2773011,27730113,62,Hombre,Suegra(o),p3
+2773011,27730114,60,Mujer,Suegra(o),p4
+2773011,27730115,21,Hombre,Hija(o),p5
+2773011,27730116,19,Mujer,Hija(o),p6
+2773011,27730117,16,Hombre,Hija(o),p7
+2782745,27827453,5,Hombre,Hija(o),p3
+2782745,27827452,8,Hombre,Hija(o),p2
+2782745,27827451,24,Mujer,Jefa o jefe,p1
+2785509,27855091,25,Mujer,Jefa o jefe,p1
+2785509,27855092,26,Hombre,Esposa(o) o pareja,p2
+2785526,27855261,42,Mujer,Esposa(o) o pareja,p1
+2785526,27855262,44,Hombre,Jefa o jefe,p2
+2785526,27855263,23,Hombre,Hija(o),p3
+2788795,27887951,77,Hombre,Jefa o jefe,p1
+2803666,28036661,72,Mujer,Jefa o jefe,p1
+2803666,28036662,40,Mujer,Hija(o),p2
+2803709,28037093,28,Hombre,Hija(o),p3
+2803709,28037091,58,Hombre,Jefa o jefe,p1
+2803709,28037092,52,Mujer,Esposa(o) o pareja,p2
+2804050,28040501,45,Mujer,Jefa o jefe,p1
+2804050,28040502,44,Hombre,Jefa o jefe,p2
+2804050,28040503,15,Mujer,Hija(o),p3
+2804051,28040511,40,Hombre,Jefa o jefe,p1
+2804051,28040512,36,Mujer,Otro parentesco,p2
+2804051,28040513,63,Mujer,Madre o padre,p3
+2804052,28040521,33,Mujer,Jefa o jefe,p1
+2804052,28040522,42,Hombre,Jefa o jefe,p2
+2804052,28040523,15,Hombre,Hija(o),p3
+2804052,28040524,12,Mujer,Hija(o),p4
+2822925,28229251,53,Mujer,Jefa o jefe,p1
+2822925,28229252,53,Hombre,Esposa(o) o pareja,p2
+2822925,28229253,21,Hombre,Hija(o),p3
+2823005,28230051,74,Mujer,Jefa o jefe,p1
+2823005,28230052,65,Hombre,Otro parentesco,p2
+2823006,28230061,61,Mujer,Jefa o jefe,p1
+2823006,28230062,67,Hombre,Jefa o jefe,p2
+2823007,28230074,7,Mujer,Hija(o),p4
+2823007,28230073,8,Hombre,Hija(o),p3
+2823007,28230071,29,Mujer,Jefa o jefe,p1
+2823007,28230072,36,Hombre,Jefa o jefe,p2
+2828370,28283701,19,Hombre,Hija(o),p1
+2828370,28283702,10,Hombre,Hija(o),p2
+2828370,28283703,38,Mujer,Esposa(o) o pareja,p3
+2828370,28283704,44,Hombre,Jefa o jefe,p4
+2828640,28286401,35,Mujer,Jefa o jefe,p1
+2828640,28286402,31,Hombre,Jefa o jefe,p2
+2828640,28286403,7,Mujer,Hija(o),p3
+2828640,28286404,3,Hombre,Hija(o),p4
+2828641,28286415,54,Mujer,Madre o padre,p5
+2828641,28286414,4,Hombre,Hija(o),p4
+2828641,28286411,39,Mujer,Jefa o jefe,p1
+2828641,28286412,38,Hombre,Jefa o jefe,p2
+2828641,28286413,19,Mujer,Hija(o),p3
+2828642,28286424,1,Hombre,Hija(o),p4
+2828642,28286421,60,Mujer,Jefa o jefe,p1
+2828642,28286422,33,Hombre,Otro parentesco,p2
+2828642,28286423,34,Mujer,Hija(o),p3
+2828644,28286443,19,Hombre,Hija(o),p3
+2828644,28286442,63,Hombre,Esposa(o) o pareja,p2
+2828644,28286441,60,Mujer,Jefa o jefe,p1
+2828649,28286491,50,Mujer,Jefa o jefe,p1
+2828649,28286492,19,Hombre,Hija(o),p2
+2828649,28286493,18,Mujer,Hija(o),p3
+2851856,28518561,40,Mujer,Jefa o jefe,p1
+2851856,28518562,40,Hombre,Jefa o jefe,p2
+2851856,28518563,20,Hombre,Hija(o),p3
+2851856,28518564,7,Mujer,Hija(o),p4
+2851862,28518625,26,Hombre,Nieta(o),p5
+2851862,28518624,36,Hombre,Hija(o),p4
+2851862,28518622,65,Mujer,Esposa(o) o pareja,p2
+2851862,28518621,69,Hombre,Jefa o jefe,p1
+2851862,28518623,40,Mujer,Hija(o),p3
+2851871,28518711,41,Mujer,Jefa o jefe,p1
+2851871,28518712,42,Mujer,Esposa(o) o pareja,p2
+2851871,28518713,17,Hombre,Hija(o),p3
+2851871,28518714,16,Hombre,Hija(o),p4
+2851871,28518715,10,Mujer,Hija(o),p5
+2851872,28518725,20,Hombre,Nieta(o),p5
+2851872,28518724,12,Mujer,Nieta(o),p4
+2851872,28518721,66,Mujer,Jefa o jefe,p1
+2851872,28518722,39,Mujer,Hija(o),p2
+2851872,28518723,39,Hombre,Nuera o yerno,p3
+2851874,28518741,66,Mujer,Jefa o jefe,p1
+2851874,28518742,37,Hombre,Hija(o),p2
+2851876,28518761,44,Hombre,Jefa o jefe,p1
+2851876,28518762,42,Mujer,Esposa(o) o pareja,p2
+2855926,28559261,19,Mujer,Jefa o jefe,p1
+2855926,28559262,20,Hombre,Esposa(o) o pareja,p2
+2855926,28559263,2,Hombre,Hija(o),p3
+2855927,28559271,33,Hombre,Jefa o jefe,p1
+2855927,28559272,34,Mujer,Esposa(o) o pareja,p2
+2859704,28597041,14,Hombre,Esposa(o) o pareja,p1
+2863460,28634601,70,Hombre,Jefa o jefe,p1
+2863460,28634602,73,Mujer,Esposa(o) o pareja,p2
+2863460,28634603,30,Mujer,Hija(o),p3
+2863460,28634604,7,Mujer,Nieta(o),p4
+2881490,28814903,31,Mujer,Hija(o),p3
+2881490,28814904,85,Hombre,Suegra(o),p4
+2881490,28814902,62,Mujer,Esposa(o) o pareja,p2
+2881490,28814901,66,Hombre,Jefa o jefe,p1
+2890589,28905891,74,Mujer,Jefa o jefe,p1
+2890589,28905892,52,Mujer,Hija(o),p2
+2964943,29649431,74,Mujer,Esposa(o) o pareja,p1
+2964943,29649432,71,Hombre,Jefa o jefe,p2
+2966076,29660761,69,Hombre,Jefa o jefe,p1
+2966099,29660991,45,Hombre,Jefa o jefe,p1
+2966099,29660992,22,Mujer,Otro parentesco,p2
+2987643,29876431,67,Mujer,Jefa o jefe,p1
+2987643,29876432,61,Hombre,Esposa(o) o pareja,p2
+2987685,29876851,65,Mujer,Jefa o jefe,p1
+2987685,29876852,43,Hombre,Hija(o),p2
+2987685,29876853,42,Mujer,Hija(o),p3
+2987685,29876854,17,Mujer,Nieta(o),p4
+2987685,29876855,47,Hombre,Nuera o yerno,p5
+2987687,29876875,34,Hombre,Hija(o),p5
+2987687,29876874,33,Mujer,Hija(o),p4
+2987687,29876876,11,Hombre,Hija(o),p6
+2987687,29876872,36,Hombre,Hija(o),p2
+2987687,29876871,69,Mujer,Jefa o jefe,p1
+2987687,29876873,34,Hombre,Hija(o),p3
+2988124,29881245,5,Hombre,Hija(o),p5
+2988124,29881244,14,Mujer,Hija(o),p4
+2988124,29881241,36,Hombre,Jefa o jefe,p1
+2988124,29881242,36,Mujer,Jefa o jefe,p2
+2988124,29881243,18,Hombre,Hija(o),p3
+2990062,29900621,63,Mujer,Jefa o jefe,p1
+2990062,29900622,67,Hombre,Jefa o jefe,p2
+2990064,29900641,12,Hombre,Hija(o),p1
+2990064,29900642,21,Mujer,Hija(o),p2
+2990064,29900643,52,Hombre,Esposa(o) o pareja,p3
+2990064,29900644,47,Mujer,Jefa o jefe,p4
+2990065,29900651,80,Hombre,Jefa o jefe,p1
+2993982,29939829,333,Hombre,Nuera o yerno,p8
+2993982,29939828,336,Mujer,Hija(o),p7
+2993982,29939827,33,Hombre,Suegra(o),p6
+2993982,29939826,24,Mujer,Hija(o),p5
+2993982,299398210,31,Mujer,Hija(o),p9
+2993982,29939824,40,Mujer,Hija(o),p3
+2993982,29939823,60,Mujer,Esposa(o) o pareja,p2
+2993982,29939822,61616,Mujer,Nieta(o),p10
+2993982,29939821,67,Hombre,Jefa o jefe,p1
+2993982,29939825,38,Mujer,Hija(o),p4
+2997698,29976981,37,Mujer,Jefa o jefe,p1
+2997698,29976982,41,Hombre,Esposa(o) o pareja,p2
+2997698,29976983,15,Hombre,Hija(o),p3
+2997698,29976984,11,Hombre,Hija(o),p4
+2997698,29976985,10,Mujer,Hija(o),p5
+3003244,30032443,10,Hombre,Nieta(o),p3
+3003244,30032442,31,Hombre,Hija(o),p2
+3003244,30032441,63,Mujer,Jefa o jefe,p1
+3003250,30032501,32,Mujer,Jefa o jefe,p1
+3003250,30032502,40,Hombre,Esposa(o) o pareja,p2
+3003250,30032503,13,Hombre,Hija(o),p3
+3003250,30032504,11,Hombre,Hija(o),p4
+3003550,30035501,0,Mujer,Sin parentesco,bebe1
+3003550,30035502,80,Hombre,Jefa o jefe,p1
+3003550,30035503,41,Hombre,Hija(o),p2
+3003550,30035504,69,Mujer,Jefa o jefe,p3
+3021495,30214955,35,Mujer,Nuera o yerno,p5
+3021495,30214953,48,Mujer,Hija(o),p3
+3021495,30214954,69,Hombre,Esposa(o) o pareja,p4
+3021495,30214951,74,Mujer,Jefa o jefe,p1
+3021495,30214952,54,Hombre,Hija(o),p2
+3021663,30216631,32,Mujer,Jefa o jefe,p1
+3021663,30216632,40,Hombre,Jefa o jefe,p2
+3035543,30355431,55,Mujer,Jefa o jefe,p1
+3039213,30392135,50,Mujer,Hija(o),p5
+3039213,30392133,18,Hombre,Otro parentesco,p3
+3039213,30392134,70,Hombre,Jefa o jefe,p4
+3039213,30392131,23,Hombre,Hija(o),p1
+3039213,30392132,20,Mujer,Otro parentesco,p2
+3040277,30402771,49,Hombre,Jefa o jefe,p1
+3040277,30402772,49,Mujer,Esposa(o) o pareja,p2
+3040277,30402773,21,Hombre,Hija(o),p3
+3040277,30402774,10,Hombre,Hija(o),p4
+3042544,30425445,22,Hombre,Hija(o),p5
+3042544,30425447,8,Mujer,Nieta(o),p7
+3042544,30425444,23,Mujer,Hija(o),p4
+3042544,30425446,74,Mujer,Otro parentesco,p6
+3042544,30425442,48,Mujer,Esposa(o) o pareja,p2
+3042544,30425441,51,Hombre,Jefa o jefe,p1
+3042544,30425443,29,Mujer,Hija(o),p3
+3055573,30555731,61,Hombre,Jefa o jefe,p1
+3055573,30555732,59,Mujer,Esposa(o) o pareja,p2
+3055573,30555733,86,Hombre,Madre o padre,p3
+3055573,30555734,32,Hombre,Hija(o),p4
+3057178,30571781,60,Hombre,Jefa o jefe,p1
+3057178,30571782,61,Mujer,Esposa(o) o pareja,p2
+3057178,30571783,38,Hombre,Hija(o),p3
+3057188,30571883,86,Hombre,Jefa o jefe,p3
+3057188,30571881,57,Hombre,Hija(o),p1
+3057188,30571882,52,Hombre,Hija(o),p2
+3060223,30602231,71,Hombre,Jefa o jefe,p1
+3060223,30602232,67,Mujer,Esposa(o) o pareja,p2
+3061070,30610701,19,Hombre,Nieta(o),p1
+3061070,30610702,21,Hombre,Nieta(o),p2
+3061070,30610703,50,Hombre,Esposa(o) o pareja,p3
+3061070,30610704,59,Mujer,Jefa o jefe,p4
+3067371,30673712,38,Hombre,Jefa o jefe,p2
+3067371,30673711,3,Hombre,Hija(o),p1
+3067371,30673713,33,Mujer,Jefa o jefe,p3
+3069284,30692841,50,Mujer,Jefa o jefe,p1
+3069284,30692842,18,Mujer,Hija(o),p2
