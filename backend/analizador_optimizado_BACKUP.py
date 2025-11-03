@@ -81,9 +81,26 @@ class DataIntegrator:
         self.df_personas = None
         self.df_hogares = None
         
-    def cargar_y_unir_datasets(self, ruta_base: str = "01_data/"):
-        """Carga y une los datasets con validación de integridad"""
-        print(f"🔍 Cargando datos desde: {ruta_base}")
+    def cargar_y_unir_datasets(self, ruta_base: str = None):
+        """
+        Carga y une los datasets con validación de integridad
+        VERSIÓN MEJORADA: Detecta automáticamente la ruta correcta
+        """
+        
+        # Si no se proporciona ruta, detectarla automáticamente
+        if ruta_base is None:
+            ruta_base = self._detectar_ruta_datos()
+            print(f"🔍 Ruta detectada automáticamente: {ruta_base}")
+        else:
+            print(f"🔍 Cargando datos desde: {ruta_base}")
+        
+        # Validar que la ruta existe
+        if not os.path.exists(ruta_base):
+            raise FileNotFoundError(
+                f"\n❌ Carpeta de datos no encontrada: {ruta_base}\n"
+                f"   Ruta absoluta: {os.path.abspath(ruta_base)}\n"
+                f"   Verifica que existe la carpeta 01_data con los archivos CSV"
+            )        
         
         df_hogares = pd.read_csv(f"{ruta_base}/CaracteristicasHogar.csv")
         df_caracteristicas = pd.read_csv(f"{ruta_base}/CaracteristicasPersona.csv")
@@ -154,6 +171,62 @@ class DataIntegrator:
         self.df_hogares = df_hogares
         
         return df_completo
+
+    def _detectar_ruta_datos(self) -> str:
+        """
+        Detecta automáticamente la ruta correcta de 01_data/
+        Funciona desde backend/ O desde frontend/ (Streamlit)
+        """
+        import os
+        
+        # Posibles rutas según dónde se ejecute el script
+        rutas_posibles = [
+            # Si se ejecuta desde backend/
+            "../data/01_data/",
+            # Si se ejecuta desde frontend/ (Streamlit)
+            "../data/01_data/",
+            "../../data/01_data/",
+            # Si está en el mismo nivel que data/
+            "./data/01_data/",
+            "data/01_data/",
+            # Búsqueda absoluta
+            os.path.expanduser("~/analizador-politica-social/data/01_data/"),
+        ]
+        
+        for ruta in rutas_posibles:
+            ruta_abs = os.path.abspath(ruta)
+            
+            # Verificar que existe la carpeta Y contiene los archivos necesarios
+            if os.path.exists(ruta_abs):
+                archivos_esperados = [
+                    "CaracteristicasHogar.csv",
+                    "CaracteristicasPersona.csv",
+                    "CarenciasPersona.csv",
+                    "IntervencionesPotencialesPAPEPersona.csv"
+                ]
+                
+                archivos_presentes = os.listdir(ruta_abs)
+                if all(archivo in archivos_presentes for archivo in archivos_esperados):
+                    print(f"   ✅ Ruta válida encontrada: {ruta_abs}")
+                    return ruta
+        
+        # Si no encuentra nada, error informativo
+        raise FileNotFoundError(
+            f"\n❌ NO SE ENCONTRÓ LA CARPETA 01_data\n"
+            f"   Directorio actual: {os.getcwd()}\n"
+            f"   Rutas buscadas:\n"
+            + "\n".join([f"      - {os.path.abspath(r)}" for r in rutas_posibles]) +
+            f"\n\n   Soluciones:\n"
+            f"   1. Verifica que la estructura sea:\n"
+            f"      analizador-politica-social/\n"
+            f"      ├── backend/\n"
+            f"      ├── frontend/\n"
+            f"      └── data/\n"
+            f"          └── 01_data/\n"
+            f"\n   2. O pasa la ruta manualmente:\n"
+            f"      integrator.cargar_y_unir_datasets('../data/01_data/')"
+        )
+
 
     def _generar_reporte_hogares_huerfanos(self, df_huerfanos: pd.DataFrame, ids_huerfanos: set):
         """Genera reportes de hogares huérfanos"""
