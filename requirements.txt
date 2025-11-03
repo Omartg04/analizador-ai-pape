@@ -1,38 +1,14 @@
-# ===============================
-# Núcleo científico y manejo de datos
-# ===============================
 numpy==2.2.6
 pandas==2.2.3
-# PyArrow solo con rueda binaria, evita compilación en el host
 pyarrow==14.0.2 --only-binary :all:
-
-# ===============================
-# Visualización y dashboards
-# ===============================
 streamlit==1.39.0
 plotly==5.24.1
 matplotlib==3.9.2
-
-# ===============================
-# Integración con APIs y configuración
-# ===============================
 requests==2.32.3
 python-dotenv==1.0.1
-
-# ===============================
-# Modelos de lenguaje y AI
-# ===============================
 openai==1.51.2
-
-# ===============================
-# PDF y reportes
-# ===============================
 reportlab==4.2.5
-
-# ===============================
-# Herramientas de instalación
-# ===============================
-# Siempre actualizar pip, setuptools y wheel para instalar ruedas correctamente
 pip>=25.3
 setuptools>=80.9.0
 wheel>=0.45.1
+
