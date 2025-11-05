@@ -471,7 +471,7 @@ class DelimitadorPoblacional:
         df_filtrado = self.df.copy()
         condiciones = []
         
-        # Criterios de edadƒ
+        # Criterios de edad
         if 'rango_edad' in criterios and criterios['rango_edad']:
             edad_min, edad_max = criterios['rango_edad']
             condiciones.append(
@@ -608,14 +608,15 @@ class AnalizadorProgramasSociales:
         }
         return mapeo_programas_carencias.get(carencia, [])
 
-    def _aplicar_filtros_basicos(self, grupo_edad: tuple = None, ubicacion: str = None, 
+    # ***** CORREGIDO *****
+    def _aplicar_filtros_basicos(self, rango_edad: tuple = None, ubicacion: str = None, 
                                sexo: str = None, carencia: str = None) -> pd.DataFrame:
         """Aplica filtros básicos de forma consistente"""
         df_filtrado = self.df.copy()
         
         # Filtro por edad
-        if grupo_edad:
-            edad_min, edad_max = grupo_edad
+        if rango_edad:
+            edad_min, edad_max = rango_edad
             df_filtrado = df_filtrado[
                 (df_filtrado['edad_persona'] >= edad_min) & 
                 (df_filtrado['edad_persona'] <= edad_max)
@@ -652,7 +653,8 @@ class AnalizadorProgramasSociales:
     # MÉTODO PRINCIPAL: ANÁLISIS DE ELEGIBILIDAD
     # ========================================================================
     
-    def analizar_elegibilidad_programa(self, programa: str, grupo_edad: tuple = None, 
+    # ***** CORREGIDO *****
+    def analizar_elegibilidad_programa(self, programa: str, rango_edad: tuple = None, 
                                      ubicacion: str = None, sexo: str = None,
                                      carencia: str = None, incluir_brecha: bool = True,
                                      segmentacion_geografica: str = None) -> Dict:
@@ -670,7 +672,7 @@ class AnalizadorProgramasSociales:
             }
         
         # Aplicar filtros
-        df_filtrado = self._aplicar_filtros_basicos(grupo_edad, ubicacion, sexo, carencia)
+        df_filtrado = self._aplicar_filtros_basicos(rango_edad, ubicacion, sexo, carencia)
         
         if len(df_filtrado) == 0:
             return {"error": "No hay personas que cumplan los criterios especificados"}
@@ -748,7 +750,7 @@ class AnalizadorProgramasSociales:
             "programa": programa,
             "nombre_programa": self.mapeo_programas.get(programa, programa),
             "criterios_aplicados": {
-                "grupo_edad": grupo_edad,
+                "rango_edad": rango_edad,
                 "ubicacion": ubicacion,
                 "sexo": sexo,
                 "carencia": carencia
@@ -881,7 +883,8 @@ class AnalizadorProgramasSociales:
     # MÉTODOS COMPLEMENTARIOS
     # ========================================================================
     
-    def analizar_elegibilidad_multiple(self, programas: List[str], grupo_edad: tuple = None,
+    # ***** CORREGIDO *****
+    def analizar_elegibilidad_multiple(self, programas: List[str], rango_edad: tuple = None,
                                      ubicacion: str = None, top_n: int = 5) -> Dict:
         """Analiza elegibilidad para múltiples programas simultáneamente"""
         resultados = {}
@@ -890,7 +893,7 @@ class AnalizadorProgramasSociales:
         for programa in programas:
             resultado = self.analizar_elegibilidad_programa(
                 programa=programa,
-                grupo_edad=grupo_edad,
+                rango_edad=rango_edad,
                 ubicacion=ubicacion,
                 incluir_brecha=True
             )
@@ -924,7 +927,8 @@ class AnalizadorProgramasSociales:
             }
         }
 
-    def identificar_carencias_sin_cobertura(self, carencia: str, grupo_edad: tuple = None, 
+    # ***** CORREGIDO *****
+    def identificar_carencias_sin_cobertura(self, carencia: str, rango_edad: tuple = None, 
                                            ubicacion: str = None) -> Dict:
         """Personas con carencias que NO son elegibles para programas relacionados"""
         print(f"🔍 [CARENCIAS_SIN_COBERTURA] Iniciando análisis...")
@@ -951,8 +955,8 @@ class AnalizadorProgramasSociales:
                 return {"error": f"No hay personas con carencia de {carencia}"}
             
             # Aplicar filtros adicionales
-            if grupo_edad:
-                edad_min, edad_max = grupo_edad
+            if rango_edad:
+                edad_min, edad_max = rango_edad
                 df_con_carencia = df_con_carencia[
                     (df_con_carencia['edad_persona'] >= edad_min) & 
                     (df_con_carencia['edad_persona'] <= edad_max)
@@ -1027,15 +1031,16 @@ class AnalizadorProgramasSociales:
             print(f"❌ Error: {str(e)}")
             return {"error": f"Error analizando carencias: {str(e)}"}
 
-    def analizar_intensidad_carencias(self, grupo_edad: tuple = None, ubicacion: str = None) -> Dict:
+    # ***** CORREGIDO *****
+    def analizar_intensidad_carencias(self, rango_edad: tuple = None, ubicacion: str = None) -> Dict:
         """Analiza personas con múltiples carencias simultáneas"""
         print(f"🔍 [INTENSIDAD_CARENCIAS] Iniciando análisis...")
         
         try:
             df_analisis = self.df.copy()
             
-            if grupo_edad:
-                edad_min, edad_max = grupo_edad
+            if rango_edad:
+                edad_min, edad_max = rango_edad
                 df_analisis = df_analisis[
                     (df_analisis['edad_persona'] >= edad_min) & 
                     (df_analisis['edad_persona'] <= edad_max)
@@ -1077,24 +1082,24 @@ class AnalizadorProgramasSociales:
                 "distribucion_intensidad": {
                     "sin_carencias": {
                         "cantidad": int(personas_sin_carencias),
-                        "porcentaje": float(round((personas_sin_carencias / total_personas * 100), 2))
+                        "porcentaje": float(round((personas_sin_carencias / total_personas * 100), 2)) if total_personas > 0 else 0.0
                     },
                     "una_carencia": {
                         "cantidad": int(personas_1_carencia),
-                        "porcentaje": float(round((personas_1_carencia / total_personas * 100), 2))
+                        "porcentaje": float(round((personas_1_carencia / total_personas * 100), 2)) if total_personas > 0 else 0.0
                     },
                     "dos_carencias": {
                         "cantidad": int(personas_2_carencias),
-                        "porcentaje": float(round((personas_2_carencias / total_personas * 100), 2))
+                        "porcentaje": float(round((personas_2_carencias / total_personas * 100), 2)) if total_personas > 0 else 0.0
                     },
                     "tres_carencias": {
                         "cantidad": int(personas_3_carencias),
-                        "porcentaje": float(round((personas_3_carencias / total_personas * 100), 2))
+                        "porcentaje": float(round((personas_3_carencias / total_personas * 100), 2)) if total_personas > 0 else 0.0
                     }
                 },
                 "poblacion_vulnerabilidad_extrema": {
                     "total": int(len(personas_vulnerabilidad_extrema)),
-                    "porcentaje": float(round((len(personas_vulnerabilidad_extrema) / total_personas * 100), 2))
+                    "porcentaje": float(round((len(personas_vulnerabilidad_extrema) / total_personas * 100), 2)) if total_personas > 0 else 0.0
                 }
             }
             
@@ -1105,7 +1110,8 @@ class AnalizadorProgramasSociales:
             print(f"❌ Error: {str(e)}")
             return {"error": f"Error analizando intensidad: {str(e)}"}
 
-    def analizar_brechas_multiprograma(self, programas: List[str], grupo_edad: tuple = None,
+    # ***** CORREGIDO *****
+    def analizar_brechas_multiprograma(self, programas: List[str], rango_edad: tuple = None,
                                       ubicacion: str = None) -> Dict:
         """Analiza y compara brechas entre múltiples programas"""
         print(f"🔍 [BRECHAS_MULTIPROGRAMA] Iniciando análisis comparativo...")
@@ -1117,7 +1123,7 @@ class AnalizadorProgramasSociales:
             for programa in programas:
                 resultado = self.analizar_elegibilidad_programa(
                     programa=programa,
-                    grupo_edad=grupo_edad,
+                    rango_edad=rango_edad,
                     ubicacion=ubicacion,
                     incluir_brecha=True
                 )
@@ -1166,7 +1172,8 @@ class AnalizadorProgramasSociales:
     # MÉTODOS FALTANTES IMPLEMENTADOS
     # ========================================================================
 
-    def analizar_brechas_programa_grupo(self, programa: str, grupo_edad: tuple = None, 
+    # ***** CORREGIDO *****
+    def analizar_brechas_programa_grupo(self, programa: str, rango_edad: tuple = None, 
                                         ubicacion: str = None) -> Dict:
         """
         ANÁLISIS DE BRECHAS: Personas elegibles que NO reciben un programa
@@ -1181,7 +1188,7 @@ class AnalizadorProgramasSociales:
                 return {"error": f"Programa '{programa}' no encontrado"}
 
             # 1. Aplicar filtros base (edad, ubicación)
-            df_filtrado = self._aplicar_filtros_basicos(grupo_edad, ubicacion)
+            df_filtrado = self._aplicar_filtros_basicos(rango_edad, ubicacion)
             
             if len(df_filtrado) == 0:
                 return {"error": "No hay personas que cumplan los criterios iniciales"}
@@ -1298,7 +1305,791 @@ class AnalizadorProgramasSociales:
 
         except Exception as e:
             print(f"❌ Error en analizar_cobertura_geografica: {str(e)}")
-            return {"error": f"Error analizando cobertura geo: {str(e)}"}      
+            return {"error": f"Error analizando cobertura geo: {str(e)}"}   
+
+
+    """Agente que usa LLM + Function Calling con sistema de robustez mejorado - VERSIÓN ACTUALIZADA"""
+    def __init__(self, df_completo, api_key: str):
+        self.df = df_completo
+        self.analizador = AnalizadorUnidimensional(df_completo)
+        self.client = OpenAI(api_key=api_key, base_url="https://api.deepseek.com/v1", timeout=60.0)
+        
+        # === PASO 1: CALCULAR CIFRAS REALES ===
+        total_personas = len(df_completo)
+        total_hogares = df_completo['id_hogar'].nunique()
+        total_colonias = df_completo['colonia'].nunique()
+        total_agebs = df_completo['ageb'].nunique()
+        
+        # === PASO 2: CONSTRUIR TU CONTEXTO COMPLETO ===
+        contexto = f"""
+        Eres un analista especializado en política social con capacidades avanzadas de análisis de brechas.
+        
+        DATASET DISPONIBLE (CIFRAS REALES):
+        - {total_personas:,} personas en {total_hogares:,} hogares
+        - Promedio {total_personas / total_hogares:.2f} personas por hogar
+        - Carencias: salud, educación, seguridad social
+        - 13 programas sociales de elegibilidad
+        - Datos geográficos: {total_colonias} colonias, {total_agebs} AGEBs
+        
+        CAPACIDADES PRINCIPALES:
+        1. ANÁLISIS DE BRECHAS: Identificar personas elegibles que NO reciben programas
+        2. CARENCIAS SIN COBERTURA: Personas con carencias sin programas relacionados  
+        3. INTENSIDAD DE CARENCIAS: Personas con múltiples carencias simultáneas
+        4. COMPARATIVA PROGRAMAS: Analizar múltiples programas simultáneamente
+        5. DELIMITACIÓN POBLACIONAL: Segmentar por edad, sexo, ubicación, carencias
+        6. ANÁLISIS GEOGRÁFICO: Distribución por AGEB, colonia, ubicación
+        
+        INSTRUCCIONES:
+        - PARA BRECHAS → Usa 'analizar_brechas_programa_grupo'
+        - PARA CARENCIAS SIN COBERTURA → Usa 'identificar_carencias_sin_cobertura'  
+        - PARA MÚLTIPLES CARENCIAS → Usa 'analizar_intensidad_carencias'
+        - PARA COMPARAR PROGRAMAS → Usa 'analizar_brechas_multiprograma'
+        - PARA ANÁLISIS GENERAL → Usa 'analizar_flujo_completo'
+        - PARA CONSULTAS GEOGRÁFICAS → Usa 'segmentacion_geografica' en analizar_flujo_completo
+        
+        Responde de manera natural y enfocada en insights accionables.
+        """.strip()
+
+        # === PASO 3: INICIALIZAR messages CON TU CONTEXTO ===
+        self.messages = [{"role": "system", "content": contexto}]
+
+    def _definir_herramientas_analisis(self):
+        """Define las funciones disponibles para el LLM - VERSIÓN COMPLETA ACTUALIZADA"""
+        tools = [
+            # HERRAMIENTA PRINCIPAL ACTUALIZADA
+            {
+                "type": "function",
+                "function": {
+                    "name": "analizar_flujo_completo",
+                    "description": "ANÁLISIS GENERAL: Delimitación poblacional completa con análisis demográfico y geográfico. Úsala para consultas generales de segmentación, distribución geográfica y perfiles poblacionales.",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "criterios_demograficos": {
+                                "type": "object",
+                                "description": "Criterios para delimitar población",
+                                "properties": {
+                                    "rango_edad": {"type": "array", "items": {"type": "number"}, "description": "Rango de edad [min, max]. Ej: [65, 100] para adultos mayores, [0, 12] para niños"},
+                                    "sexo": {"type": "string", "enum": ["Mujer", "Hombre"], "description": "Sexo de la persona"},
+                                    "carencia_salud": {"type": "boolean", "description": "Filtrar por carencia en salud (presencia_carencia_salud_persona = 'yes')"},
+                                    "carencia_educacion": {"type": "boolean", "description": "Filtrar por carencia en educación (presencia_rezago_educativo_persona = 'yes')"},
+                                    "carencia_seguridad_social": {"type": "boolean", "description": "Filtrar por carencia en seguridad social (presencia_carencia_seguridad_social_persona = 'yes')"},
+                                    "programa_social": {"type": "string", "description": "Programa social específico: pension_adultos_mayores, pension_mujeres_bienestar, beca_benito_juarez, etc."},
+                                    "ubicacion": {"type": "string", "description": "Ubicación para filtrar (colonia, ageb, zona)"},
+                                    "segmentacion_geografica": {"type": "string", "description": "Columna para segmentación: ageb, colonia, ubicacion"},
+                                    "ordenamiento": {"type": "string", "enum": ["ascendente", "descendente"], "description": "Ordenamiento de resultados"}
+                                }
+                            },
+                            "segmentacion_geografica": {
+                                "type": "string", 
+                                "description": "Columna para segmentación geográfica: ageb, colonia, ubicacion. Úsala para consultas como 'por ageb', 'por colonia'",
+                                "default": None
+                            },
+                            "ordenamiento": {
+                                "type": "string",
+                                "enum": ["ascendente", "descendente"],
+                                "description": "Ordenamiento de resultados. 'descendente' para mayor a menor, 'ascendente' para menor a mayor",
+                                "default": "descendente"
+                            },
+                            "limite": {
+                                "type": "integer",
+                                "description": "Límite de resultados a mostrar en rankings geográficos", 
+                                "default": 10
+                            }
+                        },
+                        "required": ["criterios_demograficos"]
+                    }
+                }
+            },
+            # ============================================================================
+            # NUEVAS HERRAMIENTAS DE ELEGIBILIDAD ESPECÍFICA
+            # ============================================================================
+            {
+                "type": "function",
+                "function": {
+                    "name": "analizar_elegibilidad_programa",
+                    "description": "ANÁLISIS DIRECTO DE ELEGIBILIDAD: Analiza personas elegibles para programas sociales específicos. Úsala para: 'personas elegibles para X', 'elegibles por edad/ubicación/sexo', 'análisis por AGEB/colonia', 'personas que pueden recibir programa'",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "programa": {
+                                "type": "string", 
+                                "description": "Nombre EXACTO del programa: imss_bienestar, pension_adultos_mayores, pension_mujeres_bienestar, beca_benito_juarez, beca_rita_cetina, jovenes_escribiendo_el_futuro, jovenes_construyendo_futuro, desde_la_cuna, mi_beca_para_empezar, seguro_desempleo_cdmx, ingreso_ciudadano_universal, inea, leche_bienestar",
+                                "enum": ["imss_bienestar", "pension_adultos_mayores", "pension_mujeres_bienestar", 
+                                    "beca_benito_juarez", "beca_rita_cetina", "jovenes_escribiendo_el_futuro",
+                                    "jovenes_construyendo_futuro", "desde_la_cuna", "mi_beca_para_empezar",
+                                    "seguro_desempleo_cdmx", "ingreso_ciudadano_universal", "inea", "leche_bienestar"]
+                            },
+                            "grupo_edad": {
+                                "type": "array", 
+                                "items": {"type": "number"},
+                                "description": "Rango de edad [min, max]. Ej: [0, 12] para niños, [65, 100] para adultos mayores",
+                                "default": None
+                            },
+                            "ubicacion": {
+                                "type": "string",
+                                "description": "Ubicación para filtrar: colonia, AGEB, zona específica",
+                                "default": None
+                            },
+                            "sexo": {
+                                "type": "string",
+                                "enum": ["Mujer", "Hombre"],
+                                "description": "Filtrar por sexo",
+                                "default": None
+                            },
+                            "carencia": {
+                                "type": "string", 
+                                "enum": ["salud", "educacion", "seguridad_social"],
+                                "description": "Filtrar por tipo de carencia",
+                                "default": None
+                            },
+                            "segmentacion_geografica": {
+                                "type": "string",
+                                "enum": ["ageb", "colonia"],
+                                "description": "Segmentar resultados por nivel geográfico. Úsala para 'por AGEB', 'por colonia'",
+                                "default": None
+                            },
+                            "incluir_brecha": {
+                                "type": "boolean",
+                                "description": "Incluir análisis de brecha (personas elegibles que no reciben apoyo)",
+                                "default": True
+                            }
+                        },
+                        "required": ["programa"]
+                    }
+                }
+            },
+            {
+                "type": "function",
+                "function": {
+                    "name": "analizar_cobertura_geografica",
+                    "description": "ANÁLISIS GEOGRÁFICO ESPECÍFICO: Analiza distribución de elegibles por AGEB o colonia. Úsala para: 'elegibles por AGEB', 'cobertura geográfica por colonia', 'densidad de elegibles por zona', 'distribución territorial de programa'",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "programa": {
+                                "type": "string",
+                                "description": "Nombre del programa social",
+                                "enum": ["imss_bienestar", "pension_adultos_mayores", "pension_mujeres_bienestar", 
+                                    "beca_benito_juarez", "beca_rita_cetina", "jovenes_escribiendo_el_futuro",
+                                    "jovenes_construyendo_futuro", "desde_la_cuna", "mi_beca_para_empezar",
+                                    "seguro_desempleo_cdmx", "ingreso_ciudadano_universal", "inea", "leche_bienestar"]
+                            },
+                            "nivel_geografico": {
+                                "type": "string",
+                                "enum": ["ageb", "colonia"],
+                                "description": "Nivel geográfico para el análisis. 'ageb' para análisis por AGEB, 'colonia' por colonia",
+                                "default": "ageb"
+                            },
+                            "top_n": {
+                                "type": "integer",
+                                "description": "Número de zonas top a mostrar",
+                                "default": 10
+                            }
+                        },
+                        "required": ["programa"]
+                    }
+                }
+            },
+            {
+                "type": "function",
+                "function": {
+                    "name": "analizar_elegibilidad_multiple",
+                    "description": "COMPARATIVA DE ELEGIBILIDAD: Analiza y compara múltiples programas simultáneamente. Úsala para: 'comparar elegibilidad entre programas', 'qué programa tiene más elegibles', 'ranking de programas por cobertura', 'comparar pensiones vs becas'",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "programas": {
+                                "type": "array",
+                                "items": {"type": "string"},
+                                "description": "Lista de programas a comparar. Ej: [pension_adultos_mayores, pension_mujeres_bienestar], [beca_benito_juarez, beca_rita_cetina]",
+                                "enum": ["imss_bienestar", "pension_adultos_mayores", "pension_mujeres_bienestar", 
+                                    "beca_benito_juarez", "beca_rita_cetina", "jovenes_escribiendo_el_futuro",
+                                    "jovenes_construyendo_futuro", "desde_la_cuna", "mi_beca_para_empezar",
+                                    "seguro_desempleo_cdmx", "ingreso_ciudadano_universal", "inea", "leche_bienestar"]
+                            },
+                            "grupo_edad": {
+                                "type": "array", 
+                                "items": {"type": "number"},
+                                "description": "Rango de edad opcional [min, max]",
+                                "default": None
+                            },
+                            "ubicacion": {
+                                "type": "string",
+                                "description": "Ubicación para filtrar",
+                                "default": None
+                            },
+                            "top_n": {
+                                "type": "integer",
+                                "description": "Número máximo de programas en ranking",
+                                "default": 5
+                            }
+                        },
+                        "required": ["programas"]
+                    }
+                }
+            },
+            # ============================================================================
+            # HERRAMIENTAS EXISTENTES DE BRECHAS (MANTENIDAS)
+            # ============================================================================
+            {
+                "type": "function",
+                "function": {
+                    "name": "analizar_brechas_programa_grupo",
+                    "description": "ANÁLISIS DE BRECHAS: Identifica personas elegibles que NO reciben un programa específico. Úsala para: 'adultos mayores sin pensión', 'personas elegibles que no reciben X programa', 'brechas de cobertura por edad/ubicación'",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "programa": {
+                                "type": "string", 
+                                "description": "Nombre del programa social",
+                                "enum": ["imss_bienestar", "pension_adultos_mayores", "pension_mujeres_bienestar", 
+                                    "beca_benito_juarez", "beca_rita_cetina", "jovenes_escribiendo_el_futuro",
+                                    "jovenes_construyendo_futuro", "desde_la_cuna", "mi_beca_para_empezar",
+                                    "seguro_desempleo_cdmx", "ingreso_ciudadano_universal", "inea", "leche_bienestar"]
+                            },
+                            "grupo_edad": {
+                                "type": "array", 
+                                "items": {"type": "number"}, 
+                                "description": "Rango de edad [min, max]. Ej: [65, 100] para adultos mayores, [0, 12] para niños", 
+                                "default": None
+                            },
+                            "ubicacion": {
+                                "type": "string", 
+                                "description": "Ubicación para filtrar: colonia, ageb, zona", 
+                                "default": None
+                            }
+                        },
+                        "required": ["programa"]
+                    }
+                }
+            },
+            {
+                "type": "function", 
+                "function": {
+                    "name": "identificar_carencias_sin_cobertura",
+                    "description": "CARENCIAS SIN COBERTURA: Personas con carencias que NO son elegibles para programas relacionados. Úsala para: 'carencia de salud sin programas', 'personas con rezago educativo sin becas', 'vulnerabilidad sin protección social'",
+                    "parameters": {
+                        "type": "object", 
+                        "properties": {
+                            "carencia": {
+                                "type": "string", 
+                                "enum": ["salud", "educacion", "seguridad_social"], 
+                                "description": "Tipo de carencia a analizar"
+                            },
+                            "grupo_edad": {
+                                "type": "array", 
+                                "items": {"type": "number"}, 
+                                "description": "Rango de edad opcional [min, max]", 
+                                "default": None
+                            }
+                        },
+                        "required": ["carencia"]
+                    }
+                }
+            },
+            {
+                "type": "function",
+                "function": {
+                    "name": "analizar_intensidad_carencias", 
+                    "description": "INTENSIDAD DE CARENCIAS: Analiza personas con múltiples carencias simultáneas. Úsala para: 'niños con mayor carencia social', 'personas con vulnerabilidad extrema', 'múltiples carencias por edad'",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "grupo_edad": {
+                                "type": "array", 
+                                "items": {"type": "number"}, 
+                                "description": "Rango de edad [min, max]. Ej: [0, 12] para niños, [65, 100] para adultos mayores", 
+                                "default": None
+                            }
+                        }
+                    }
+                }
+            },
+            {
+                "type": "function",
+                "function": {
+                    "name": "analizar_brechas_multiprograma", 
+                    "description": "COMPARATIVA DE BRECHAS: Analiza y compara brechas entre múltiples programas. Úsala para: 'comparar pensiones adultos mayores vs mujeres', 'qué programa tiene mayor brecha', 'análisis comparativo de cobertura'",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "programas": {
+                                "type": "array", 
+                                "items": {"type": "string"}, 
+                                "description": "Lista de programas a comparar",
+                                "enum": ["imss_bienestar", "pension_adultos_mayores", "pension_mujeres_bienestar", 
+                                    "beca_benito_juarez", "beca_rita_cetina", "jovenes_escribiendo_el_futuro",
+                                    "jovenes_construyendo_futuro", "desde_la_cuna", "mi_beca_para_empezar",
+                                    "seguro_desempleo_cdmx", "ingreso_ciudadano_universal", "inea", "leche_bienestar"]
+                            },
+                            "grupo_edad": {
+                                "type": "array", 
+                                "items": {"type": "number"}, 
+                                "description": "Rango de edad opcional [min, max]", 
+                                "default": None
+                            }
+                        },
+                        "required": ["programas"]
+                    }
+                }
+            },
+            # ============================================================================
+            # HERRAMIENTAS COMPLEMENTARIAS (MANTENIDAS)
+            # ============================================================================
+            {
+                "type": "function",
+                "function": {
+                    "name": "analizar_distribucion_categorica",
+                    "description": "Análisis simple de distribución de variables categóricas. Úsala para: 'distribución por sexo', 'tipos de parentesco', 'ubicaciones disponibles'",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "columna": {
+                                "type": "string", 
+                                "description": "Nombre de la columna categórica: sexo_persona, parentesco_persona, colonia, ageb, etc."
+                            }
+                        },
+                        "required": ["columna"]
+                    }
+                }
+            },
+            {
+                "type": "function", 
+                "function": {
+                    "name": "analizar_distribucion_numerica",
+                    "description": "Análisis simple de distribución de variables numéricas. Úsala para: 'estadísticas de edad', 'distribución de personas por hogar'",
+                    "parameters": {
+                        "type": "object", 
+                        "properties": {
+                            "columna": {
+                                "type": "string", 
+                                "description": "Nombre de la columna numérica: edad_persona, personas, total_personas, etc."
+                            }
+                        },
+                        "required": ["columna"]
+                    }
+                }
+            },
+            {
+                "type": "function",
+                "function": {
+                    "name": "explorar_ubicaciones_disponibles",
+                    "description": "Explorar colonias y AGEBs disponibles en el dataset. Úsala para conocer las ubicaciones geográficas del dataset",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "top_n": {
+                                "type": "integer", 
+                                "description": "Número máximo de ubicaciones a mostrar", 
+                                "default": 20
+                            }
+                        }
+                    }
+                }
+            },
+            {
+                "type": "function",
+                "function": {
+                    "name": "analizar_tabla_cruzada",
+                    "description": "TABLAS CRUZADAS: Genera análisis de distribución conjunta entre dos variables. Úsala para: 'por edad y sexo', 'tabla cruzada entre X e Y', 'distribución conjunta', 'clasificación múltiple', 'cross tabulation'",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "variable_filas": {
+                                "type": "string", 
+                                "description": "Variable para las filas: edad_persona, sexo_persona, parentesco_persona, colonia, ageb, etc."
+                            },
+                            "variable_columnas": {
+                                "type": "string",
+                                "description": "Variable para las columnas: sexo_persona, presencia_carencia_salud_persona, recibe_apoyos_sociales, etc."
+                            },
+                            "filtros": {
+                                "type": "object",
+                                "description": "Filtros opcionales para segmentar la población",
+                                "properties": {
+                                    "carencia_salud": {"type": "boolean"},
+                                    "carencia_educacion": {"type": "boolean"},
+                                    "carencia_seguridad_social": {"type": "boolean"},
+                                    "rango_edad": {"type": "array", "items": {"type": "number"}},
+                                    "sexo": {"type": "string", "enum": ["Mujer", "Hombre"]},
+                                    "programa_social": {"type": "string"}
+                                }
+                            },
+                            "agrupar_edad": {
+                                "type": "boolean", 
+                                "description": "Convertir edad numérica en grupos categóricos",
+                                "default": True
+                            }
+                        },
+                        "required": ["variable_filas", "variable_columnas"]
+                    }
+                }
+            }
+            
+        ]
+        return tools
+
+    # ============================================================================
+    # MÉTODO PRINCIPAL ACTUALIZADO
+    # ============================================================================
+    def procesar_consulta(self, consulta_usuario: str) -> str:
+        """Procesa consulta en lenguaje natural - VERSIÓN CON DEBUG COMPLETO"""
+        self.messages.append({"role": "user", "content": consulta_usuario})
+        
+        try:
+            # Primera llamada - LLM decide qué función usar
+            response = self.client.chat.completions.create(
+                model="deepseek-chat",
+                messages=self.messages,
+                tools=self._definir_herramientas_analisis(),
+                tool_choice="auto"
+            )
+            
+            response_message = response.choices[0].message
+            self.messages.append(response_message)
+            
+            if response_message.tool_calls:
+                print("🤖 LLM solicitó usar función de análisis...")
+                
+                for tool_call in response_message.tool_calls:
+                    function_name = tool_call.function.name
+                    function_args = json.loads(tool_call.function.arguments)
+                    
+                    print(f"🔧 Ejecutando {function_name} con args: {function_args}")
+                    
+                    # ============================================================
+                    # CRÍTICO: Agregar manejo de analizar_tabla_cruzada
+                    # ============================================================
+                    if function_name == "analizar_tabla_cruzada":
+                        print(f"📊 [TABLA_CRUZADA] Procesando solicitud...")
+                        result = self.analizador.analizar_tabla_cruzada(**function_args)
+                        
+                        # DEBUG: Verificar qué devolvió la función
+                        print(f"🔍 [DEBUG] Tipo de resultado: {type(result)}")
+                        print(f"🔍 [DEBUG] Es dict: {isinstance(result, dict)}")
+                        
+                        if isinstance(result, dict):
+                            print(f"🔍 [DEBUG] Keys del resultado: {list(result.keys())}")
+                            print(f"🔍 [DEBUG] Estado: {result.get('estado', 'NO DEFINIDO')}")
+                            
+                            if 'error' in result:
+                                print(f"❌ [DEBUG] Error encontrado: {result['error']}")
+                            
+                            if 'tabla_texto' in result:
+                                print(f"✅ [DEBUG] Tabla texto presente (longitud: {len(result['tabla_texto'])} chars)")
+                                print(f"📋 [DEBUG] Primeros 200 chars de tabla:\n{result['tabla_texto'][:200]}")
+                            
+                            if 'resumen' in result:
+                                print(f"📊 [DEBUG] Resumen: {result['resumen']}")
+                        else:
+                            print(f"⚠️ [DEBUG] Resultado NO es un diccionario!")
+                        
+                        print(f"✅ [TABLA_CRUZADA] Resultado obtenido")
+                        
+                    elif function_name == "analizar_flujo_completo":
+                        result = self.analizador.analizar_flujo_completo(**function_args)
+                    
+                    # NUEVAS HERRAMIENTAS DE ELEGIBILIDAD
+                    elif function_name == "analizar_elegibilidad_programa":
+                        result = self.analizador.programas.analizar_elegibilidad_programa(**function_args)
+                    elif function_name == "analizar_cobertura_geografica":
+                        result = self.analizador.programas.analizar_cobertura_geografica(**function_args)
+                    elif function_name == "analizar_elegibilidad_multiple":
+                        result = self.analizador.programas.analizar_elegibilidad_multiple(**function_args)
+                    
+                    # HERRAMIENTAS EXISTENTES DE BRECHAS
+                    elif function_name == "analizar_brechas_programa_grupo":
+                        result = self.analizador.programas.analizar_brechas_programa_grupo(**function_args)
+                    elif function_name == "identificar_carencias_sin_cobertura":
+                        result = self.analizador.programas.identificar_carencias_sin_cobertura(**function_args)
+                    elif function_name == "analizar_intensidad_carencias":
+                        result = self.analizador.programas.analizar_intensidad_carencias(**function_args)
+                    elif function_name == "analizar_brechas_multiprograma":
+                        result = self.analizador.programas.analizar_brechas_multiprograma(**function_args)
+                    
+                    # HERRAMIENTAS COMPLEMENTARIAS
+                    elif function_name == "analizar_distribucion_categorica":
+                        result = self.analizador.analizar_distribucion_categorica(**function_args)
+                    elif function_name == "analizar_distribucion_numerica":
+                        result = self.analizador.analizar_distribucion_numerica(**function_args)
+                    elif function_name == "explorar_ubicaciones_disponibles":
+                        result = self.analizador.explorar_ubicaciones_disponibles(**function_args)
+                    else:
+                        result = {"error": f"Función {function_name} no reconocida"}
+                    
+                    # DEBUG: Verificar antes de agregar al contexto
+                    print(f"🔍 [DEBUG] Agregando resultado al contexto del LLM...")
+                    print(f"🔍 [DEBUG] Tool call ID: {tool_call.id}")
+                    print(f"🔍 [DEBUG] Function name: {function_name}")
+                    
+                    # Agregar resultado al contexto
+                    self.messages.append({
+                        "role": "tool", 
+                        "tool_call_id": tool_call.id,
+                        "name": function_name,
+                        "content": json.dumps(result, ensure_ascii=False)
+                    })
+                    
+                    print(f"✅ [DEBUG] Resultado agregado correctamente al contexto")
+                
+                # DEBUG: Verificar mensajes antes de segunda llamada
+                print(f"🔍 [DEBUG] Total de mensajes en contexto: {len(self.messages)}")
+                print(f"🔍 [DEBUG] Último mensaje es de tipo: {self.messages[-1].get('role', 'UNKNOWN')}")
+                
+                # Respuesta final con contexto
+                print(f"🤖 [DEBUG] Solicitando respuesta final al LLM...")
+                second_response = self.client.chat.completions.create(
+                    model="deepseek-chat",
+                    messages=self.messages
+                )
+                
+                final_response = second_response.choices[0].message.content
+                self.messages.append({"role": "assistant", "content": final_response})
+                
+                print(f"✅ [DEBUG] Respuesta final generada")
+                return final_response
+            else:
+                return response_message.content
+                
+        except Exception as e:
+            error_msg = f"❌ Error en el análisis: {str(e)}"
+            print(error_msg)
+            import traceback
+            print(f"🔴 Traceback: {traceback.format_exc()}")
+            return error_msg
+
+    # ============================================================================
+    # SISTEMA DE ROBUSTEZ MEJORADO
+    # ============================================================================
+
+    def detectar_ambiguedades(self, consulta: str) -> Dict[str, Any]:
+        """Identifica términos ambiguos en la consulta y sugiere clarificaciones"""
+        
+        patrones_ambiguos = {
+            'pobreza': {
+                'termino': 'pobreza',
+                'opciones': ['pobreza por ingresos', 'pobreza por carencias', 'pobreza multidimensional'],
+                'pregunta': "¿Qué tipo de pobreza le interesa analizar?"
+            },
+            'vulnerable': {
+                'termino': 'vulnerable', 
+                'opciones': ['vulnerable por edad', 'vulnerable por carencias', 'vulnerable por discapacidad'],
+                'pregunta': "¿Vulnerabilidad por qué característica?"
+            },
+            'prioritario': {
+                'termino': 'prioritario',
+                'opciones': ['prioritario para salud', 'prioritario para educación', 'prioritario para pensiones'],
+                'pregunta': "¿Prioritario para qué área o programa?"
+            },
+            'cobertura': {
+                'termino': 'cobertura',
+                'opciones': ['cobertura de salud', 'cobertura educativa', 'cobertura de seguridad social'],
+                'pregunta': "¿Cobertura de qué servicio le interesa?"
+            },
+            'beneficiario': {
+                'termino': 'beneficiario',
+                'opciones': ['beneficiario de pensiones', 'beneficiario de becas', 'beneficiario de salud'],
+                'pregunta': "¿Beneficiario de qué tipo de programa?"
+            },
+            'acceso': {
+                'termino': 'acceso',
+                'opciones': ['acceso a salud', 'acceso a educación', 'acceso a seguridad social'],
+                'pregunta': "¿Acceso a qué servicio le interesa?"
+            }
+        }
+        
+        ambiguedades_detectadas = []
+        
+        for clave, patron in patrones_ambiguos.items():
+            if patron['termino'] in consulta.lower():
+                ambiguedades_detectadas.append(patron)
+        
+        return {
+            'hay_ambiguedad': len(ambiguedades_detectadas) > 0,
+            'ambiguedades': ambiguedades_detectadas,
+            'consulta_original': consulta
+        }
+
+    def generar_respuesta_clarificacion(self, ambiguedades: List[Dict]) -> str:
+        """Genera una respuesta amigable pidiendo clarificación"""
+        
+        if not ambiguedades:
+            return None
+        
+        respuesta = "🤔 **Necesito clarificar tu consulta:**\n\n"
+        
+        for i, ambiguedad in enumerate(ambiguedades):
+            respuesta += f"**{ambiguedad['pregunta']}**\n"
+            
+            for opcion in ambiguedad['opciones']:
+                respuesta += f"• {opcion}\n"
+            
+            if i < len(ambiguedades) - 1:
+                respuesta += "\n"
+        
+        respuesta += "\n💡 **Puedes reformular tu pregunta como:**\n"
+        respuesta += "• 'Personas vulnerables por edad sin pensiones'\n" 
+        respuesta += "• 'Brechas de cobertura en servicios de salud'\n"
+        respuesta += "• 'Población prioritaria para programas educativos'\n"
+        respuesta += "• 'Beneficiarios de pensiones por grupo de edad'"
+        
+        return respuesta
+
+    def _generar_sugerencias_contextuales_mejoradas(self, consulta: str) -> str:
+        """Sugerencias más inteligentes basadas en el contexto de la consulta"""
+        
+        sugerencias_especificas = []
+        sugerencias_generales = [
+            "• 'Adultos mayores sin pensión'",
+            "• 'Niños con múltiples carencias'", 
+            "• 'Personas con carencia de salud sin programas'",
+            "• 'Mujeres elegibles para pensión que no la reciben'",
+            "• 'Comparar brechas entre programas sociales'",
+            "• 'Distribución de carencias por edad y sexo'"
+        ]
+        
+        # Detectar contexto para sugerencias específicas
+        consulta_lower = consulta.lower()
+        
+        if any(palabra in consulta_lower for palabra in ['salud', 'médico', 'hospital', 'enfermedad', 'acceso salud']):
+            sugerencias_especificas = [
+                "• 'Personas con carencia de acceso a salud'",
+                "• 'Cobertura de servicios médicos por edad'", 
+                "• 'Brechas en programas de salud por colonia'",
+                "• 'Distribución de carencia de salud por sexo'"
+            ]
+        
+        elif any(palabra in consulta_lower for palabra in ['educación', 'educacion', 'escuela', 'estudio', 'beca']):
+            sugerencias_especificas = [
+                "• 'Niños con rezago educativo'",
+                "• 'Distribución de becas por nivel educativo'", 
+                "• 'Jóvenes sin acceso a educación superior'",
+                "• 'Rezago educativo por grupo de edad y sexo'"
+            ]
+        
+        elif any(palabra in consulta_lower for palabra in ['pensión', 'pension', 'jubilación', 'adulto mayor', 'tercera edad']):
+            sugerencias_especificas = [
+                "• 'Adultos mayores sin pensión'",
+                "• 'Brechas en cobertura de pensiones'",
+                "• 'Mujeres mayores sin seguridad social'",
+                "• 'Distribución de pensiones por colonia'"
+            ]
+        
+        elif any(palabra in consulta_lower for palabra in ['carencia', 'vulnerabilidad', 'necesidad']):
+            sugerencias_especificas = [
+                "• 'Personas con múltiples carencias'",
+                "• 'Intensidad de carencias por edad'",
+                "• 'Carencias sin cobertura de programas'",
+                "• 'Distribución de carencias por zona'"
+            ]
+        
+        # Combinar sugerencias (máximo 6)
+        todas_sugerencias = (sugerencias_especificas + sugerencias_generales)[:6]
+        
+        return f"""🤔 No identifiqué variables específicas en: "{consulta}"
+
+💡 **Basado en tu consulta, te sugiero:**
+
+{"".join(todas_sugerencias)}
+
+🎯 **Puedes ser más específico como:**
+• "¿Cuántos adultos mayores de 65 años no reciben pensión?"
+• "Personas con carencia de salud por sexo y edad"  
+• "Comparar brechas entre becas Benito Juárez y Rita Cetina"
+
+¿Sobre qué aspecto te gustaría analizar?"""
+
+    def _generar_respuesta_variables_invalidas(self, validacion: Dict, consulta: str) -> str:
+        """Maneja cuando se detectan variables inválidas"""
+        
+        return f"""❌ **No pude encontrar algunas variables en la base de datos**
+
+**Consulta:** {consulta}
+
+**Variables inválidas detectadas:** {', '.join(validacion['invalidas'])}
+
+**Variables válidas disponibles:** {', '.join(validacion['validas'])}
+
+💡 **Puedes usar términos como:**
+• 'salud', 'educación', 'seguridad social' para carencias
+• 'adultos mayores', 'niños', 'mujeres' para grupos de edad  
+• 'pensión adultos mayores', 'becas', 'programas mujeres' para programas
+• 'colonia', 'zona', 'ubicación' para análisis geográfico
+
+¿Podrías reformular tu consulta usando estos términos?"""
+
+    def _generar_respuesta_error_amigable(self, error: Exception, consulta: str) -> str:
+        """Genera respuestas útiles cuando ocurren errores"""
+        
+        mensajes_error = {
+            "JSONDecodeError": "❌ **Error de datos:** Hubo un problema procesando la información.",
+            "KeyError": "🔧 **Error técnico:** No encontré algunas variables necesarias.",
+            "ConnectionError": "🌐 **Error de conexión:** No puedo conectar con el servicio de análisis.",
+            "TimeoutError": "⏰ **Tiempo de espera:** La consulta está tomando más tiempo de lo esperado.",
+            "AttributeError": "⚙️ **Error del sistema:** Hay un problema temporal con mis funciones."
+        }
+        
+        nombre_error = type(error).__name__
+        mensaje_especifico = mensajes_error.get(nombre_error, "❌ **Ocurrió un error inesperado**")
+        
+        respuesta = f"{mensaje_especifico}\n\n"
+        respuesta += f"**Consulta:** {consulta}\n\n"
+        respuesta += "🔄 **Puedes intentar:**\n"
+        respuesta += "• Reformular tu pregunta de otra manera\n"
+        respuesta += "• Usar términos más específicos\n" 
+        respuesta += "• Esperar unos segundos y volver a intentar\n\n"
+        respuesta += "💡 **Ejemplo seguro:** 'Adultos mayores sin pensión por colonia'"
+        
+        return respuesta
+
+    def procesar_consulta_mejorado(self, consulta_usuario: str) -> str:
+        """Versión mejorada con sistema de robustez"""
+        print(f"\n👤 USUARIO: {consulta_usuario}")
+        
+        try:
+            # PASO 1: Detectar ambigüedades
+            analisis_ambiguedad = self.detectar_ambiguedades(consulta_usuario)
+            
+            if analisis_ambiguedad['hay_ambiguedad']:
+                respuesta_clarificacion = self.generar_respuesta_clarificacion(
+                    analisis_ambiguedad['ambiguedades']
+                )
+                print("🔍 Detectada ambigüedad - solicitando clarificación")
+                return respuesta_clarificacion
+            
+            # PASO 2: Traducción de términos naturales
+            traduccion = self.analizador.traducir_consulta_natural(consulta_usuario)
+            print(f"🔍 Auto-traducción: {traduccion['terminos_mapeados']}")
+            
+            # PASO 3: Si no detecta variables, sugerencias contextuales mejoradas
+            if traduccion['estado'] == "sin_criterios_detectados":
+                print("🔍 Sin criterios detectados - generando sugerencias contextuales")
+                return self._generar_sugerencias_contextuales_mejoradas(consulta_usuario)
+            
+            # PASO 4: Validación de variables detectadas
+            print(f"🔍 ANTES de validar_variables_mejorado")
+            print(f"   - Traducción: {traduccion}")
+            validacion = self.analizador.validar_variables_mejorado(traduccion)
+            print(f"🔍 DESPUÉS de validar_variables_mejorado")
+            print(f"   - Validación: {validacion}")
+            
+            if not validacion['ejecutable']:
+                print(f"🔍 Problemas de validación: {validacion}")
+                if validacion['variables_invalidas']:
+                    return self._generar_respuesta_variables_invalidas(validacion, consulta_usuario)
+                else: 
+                    return self._generar_sugerencias_contextuales_mejoradas(consulta_usuario)
+
+               
+            # PASO 5: Procesamiento normal
+            print("🔍 Consulta válida - procesando con LLM...")
+            return self.procesar_consulta(consulta_usuario)
+            
+        except Exception as e:
+            # PASO 6: Manejo elegante de errores inesperados
+            print(f"🔴 ERROR: {type(e).__name__}: {str(e)}")
+            return self._generar_respuesta_error_amigable(e, consulta_usuario)
 
 # ============================================================================
 # 3. COORDINADOR ANALÍTICO (MOVIDO ANTES DEL AGENTE PARA ORDEN CORRECTO)
@@ -1358,28 +2149,30 @@ class AnalizadorUnidimensional:
             'salud': {'tipo': 'columna', 'valor': 'presencia_carencia_salud_persona', 'filtro': 'yes'},
             'sin salud': {'tipo': 'columna', 'valor': 'presencia_carencia_salud_persona', 'filtro': 'yes'},
             'acceso a salud': {'tipo': 'columna', 'valor': 'presencia_carencia_salud_persona', 'filtro': 'yes'},
+            'carencia de acceso a salud': {'tipo': 'columna', 'valor': 'presencia_carencia_salud_persona', 'filtro': 'yes'},
             'carencia acceso a salud': {'tipo': 'columna', 'valor': 'presencia_carencia_salud_persona', 'filtro': 'yes'},
+            'sin cobertura de salud': {'tipo': 'columna', 'valor': 'presencia_carencia_salud_persona', 'filtro': 'yes'},
+            'sin servicios médicos': {'tipo': 'columna', 'valor': 'presencia_carencia_salud_persona', 'filtro': 'yes'},
             
             'carencia de educación': {'tipo': 'columna', 'valor': 'presencia_rezago_educativo_persona', 'filtro': 'yes'},
             'carencia educación': {'tipo': 'columna', 'valor': 'presencia_rezago_educativo_persona', 'filtro': 'yes'},
             'rezago educativo': {'tipo': 'columna', 'valor': 'presencia_rezago_educativo_persona', 'filtro': 'yes'},
             'educación': {'tipo': 'columna', 'valor': 'presencia_rezago_educativo_persona', 'filtro': 'yes'},
             'sin educación': {'tipo': 'columna', 'valor': 'presencia_rezago_educativo_persona', 'filtro': 'yes'},
-            'sin acceso a educación': {'tipo': 'columna', 'valor': 'presencia_rezago_educativo_persona', 'filtro': 'yes'},
-            'analfabeta': {'tipo': 'columna', 'valor': 'presencia_rezago_educativo_persona', 'filtro': 'yes'},
-            'sin asistir a escuela': {'tipo': 'columna', 'valor': 'presencia_rezago_educativo_persona', 'filtro': 'yes'},
+            'sin asistir a la escuela': {'tipo': 'columna', 'valor': 'presencia_rezago_educativo_persona', 'filtro': 'yes'},
+            'no asiste a la escuela': {'tipo': 'columna', 'valor': 'presencia_rezago_educativo_persona', 'filtro': 'yes'},
             'inasistencia escolar': {'tipo': 'columna', 'valor': 'presencia_rezago_educativo_persona', 'filtro': 'yes'},
-            'sin escuela': {'tipo': 'columna', 'valor': 'presencia_rezago_educativo_persona', 'filtro': 'yes'},
-            
+
+
             'carencia de seguridad social': {'tipo': 'columna', 'valor': 'presencia_carencia_seguridad_social_persona', 'filtro': 'yes'},
             'carencia seguridad social': {'tipo': 'columna', 'valor': 'presencia_carencia_seguridad_social_persona', 'filtro': 'yes'},
             'seguridad social': {'tipo': 'columna', 'valor': 'presencia_carencia_seguridad_social_persona', 'filtro': 'yes'},
             'sin seguridad social': {'tipo': 'columna', 'valor': 'presencia_carencia_seguridad_social_persona', 'filtro': 'yes'},
-            'inseguridad social': {'tipo': 'columna', 'valor': 'presencia_carencia_seguridad_social_persona', 'filtro': 'yes'},
+            'carencia social': {'tipo': 'columna', 'valor': 'presencia_carencia_seguridad_social_persona', 'filtro': 'yes'},
+            'sin afiliación': {'tipo': 'columna', 'valor': 'presencia_carencia_seguridad_social_persona', 'filtro': 'yes'},
             'sin acceso a seguridad social': {'tipo': 'columna', 'valor': 'presencia_carencia_seguridad_social_persona', 'filtro': 'yes'},
-            'no afiliada': {'tipo': 'columna', 'valor': 'presencia_carencia_seguridad_social_persona', 'filtro': 'yes'},
-            'sin cobertura seguridad social': {'tipo': 'columna', 'valor': 'presencia_carencia_seguridad_social_persona', 'filtro': 'yes'},
-            
+            'no afiliadas': {'tipo': 'columna', 'valor': 'presencia_carencia_seguridad_social_persona', 'filtro': 'yes'},
+
             # ==================== CARENCIAS COMPLEJAS ====================
             'carencia máxima': {'tipo': 'multiple_carencias', 'valor': 3},
             'múltiples carencias': {'tipo': 'multiple_carencias', 'valor': 3},
@@ -1387,7 +2180,8 @@ class AnalizadorUnidimensional:
             'vulnerabilidad extrema': {'tipo': 'multiple_carencias', 'valor': 3},
             'mayor carencia': {'tipo': 'multiple_carencias', 'valor': 3},
             'pobreza extrema': {'tipo': 'multiple_carencias', 'valor': 3},
-            
+            'más vulnerables': {'tipo': 'multiple_carencias', 'valor': 3},
+                        
             # ==================== VARIABLES DEMOGRÁFICAS ====================
             'edad': {'tipo': 'columna', 'valor': 'edad_persona'},
             'años': {'tipo': 'columna', 'valor': 'edad_persona'},
@@ -1946,8 +2740,9 @@ class AgenteAnaliticoLLM:
         # === PASO 3: INICIALIZAR messages CON TU CONTEXTO ===
         self.messages = [{"role": "system", "content": contexto}]
 
+    # ***** CORREGIDO Y ESTANDARIZADO *****
     def _definir_herramientas_analisis(self):
-        """Define las funciones disponibles para el LLM - VERSIÓN COMPLETA ACTUALIZADA"""
+        """Define las funciones disponibles para el LLM - VERSIÓN CORREGIDA Y ESTANDARIZADA"""
         tools = [
             # HERRAMIENTA PRINCIPAL ACTUALIZADA
             {
@@ -2013,7 +2808,7 @@ class AgenteAnaliticoLLM:
                                     "jovenes_construyendo_futuro", "desde_la_cuna", "mi_beca_para_empezar",
                                     "seguro_desempleo_cdmx", "ingreso_ciudadano_universal", "inea", "leche_bienestar"]
                             },
-                            "grupo_edad": {
+                            "rango_edad": {
                                 "type": "array", 
                                 "items": {"type": "number"},
                                 "description": "Rango de edad [min, max]. Ej: [0, 12] para niños, [65, 100] para adultos mayores",
@@ -2101,7 +2896,7 @@ class AgenteAnaliticoLLM:
                                     "jovenes_construyendo_futuro", "desde_la_cuna", "mi_beca_para_empezar",
                                     "seguro_desempleo_cdmx", "ingreso_ciudadano_universal", "inea", "leche_bienestar"]
                             },
-                            "grupo_edad": {
+                            "rango_edad": {
                                 "type": "array", 
                                 "items": {"type": "number"},
                                 "description": "Rango de edad opcional [min, max]",
@@ -2141,7 +2936,7 @@ class AgenteAnaliticoLLM:
                                     "jovenes_construyendo_futuro", "desde_la_cuna", "mi_beca_para_empezar",
                                     "seguro_desempleo_cdmx", "ingreso_ciudadano_universal", "inea", "leche_bienestar"]
                             },
-                            "grupo_edad": {
+                            "rango_edad": {
                                 "type": "array", 
                                 "items": {"type": "number"}, 
                                 "description": "Rango de edad [min, max]. Ej: [65, 100] para adultos mayores, [0, 12] para niños", 
@@ -2170,7 +2965,7 @@ class AgenteAnaliticoLLM:
                                 "enum": ["salud", "educacion", "seguridad_social"], 
                                 "description": "Tipo de carencia a analizar"
                             },
-                            "grupo_edad": {
+                            "rango_edad": {
                                 "type": "array", 
                                 "items": {"type": "number"}, 
                                 "description": "Rango de edad opcional [min, max]", 
@@ -2189,7 +2984,7 @@ class AgenteAnaliticoLLM:
                     "parameters": {
                         "type": "object",
                         "properties": {
-                            "grupo_edad": {
+                            "rango_edad": {
                                 "type": "array", 
                                 "items": {"type": "number"}, 
                                 "description": "Rango de edad [min, max]. Ej: [0, 12] para niños, [65, 100] para adultos mayores", 
@@ -2216,7 +3011,7 @@ class AgenteAnaliticoLLM:
                                     "jovenes_construyendo_futuro", "desde_la_cuna", "mi_beca_para_empezar",
                                     "seguro_desempleo_cdmx", "ingreso_ciudadano_universal", "inea", "leche_bienestar"]
                             },
-                            "grupo_edad": {
+                            "rango_edad": {
                                 "type": "array", 
                                 "items": {"type": "number"}, 
                                 "description": "Rango de edad opcional [min, max]", 
