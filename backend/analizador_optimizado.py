@@ -1398,6 +1398,19 @@ class AnalizadorUnidimensional:
             'mayor carencia': {'tipo': 'multiple_carencias', 'valor': 3},
             'pobreza extrema': {'tipo': 'multiple_carencias', 'valor': 3},
             'más vulnerables': {'tipo': 'multiple_carencias', 'valor': 3},
+
+            # === 3 O MÁS CARENCIAS ===
+            '3 o más carencias': {'tipo': 'multiple_carencias_min', 'valor': 3},
+            'con 3 o más carencias': {'tipo': 'multiple_carencias_min', 'valor': 3},
+            'más de 3 carencias': {'tipo': 'multiple_carencias_min', 'valor': 3},
+            'al menos 3 carencias': {'tipo': 'multiple_carencias_min', 'valor': 3},
+            'población con 3 o más carencias': {'tipo': 'multiple_carencias_min', 'valor': 3},
+            'personas con 3 o más carencias': {'tipo': 'multiple_carencias_min', 'valor': 3},
+            '3+ carencias': {'tipo': 'multiple_carencias_min', 'valor': 3},
+
+            # === OPCIONAL: Otros umbrales ===
+            '4 o más carencias': {'tipo': 'multiple_carencias_min', 'valor': 4},
+            '2 o más carencias': {'tipo': 'multiple_carencias_min', 'valor': 2},
                         
             # ==================== VARIABLES DEMOGRÁFICAS ====================
             'edad': {'tipo': 'columna', 'valor': 'edad_persona'},
@@ -1524,7 +1537,11 @@ class AnalizadorUnidimensional:
                         criterios['sexo'] = mapeo['valor']
                         variables_detectadas.append('sexo_persona')
                         print(f"Aplicado sexo: {mapeo['valor']} para '{termino_natural}'")
-
+                    # === TIPO: multiple_carencias (3 carencias, etc.) ===
+                    elif mapeo['tipo'] == 'multiple_carencias':
+                        criterios['multiple_carencias'] = mapeo['valor']
+                        variables_detectadas.append('conteo_carencias_persona')
+                        print(f"APLICADO: {mapeo['valor']} carencias para '{termino_natural}'")
                     # === TIPO: columna (edad_persona, carencias, etc.) ===
                     elif mapeo['tipo'] == 'columna':
                         variables_detectadas.append(mapeo['valor'])
@@ -1659,6 +1676,14 @@ class AnalizadorUnidimensional:
             elif criterio in ['segmentacion_geografica', 'ordenamiento']:
                 criterios_validos[criterio] = valor
                 print(f"Criterio adicional válido: {criterio} = {valor}")
+ 
+            elif criterio == 'multiple_carencias':
+                if valor in [1, 2, 3, 4, 5, 6]:
+                    criterios_validos[criterio] = valor
+                    print(f"Múltiples carencias válidas: {valor}")
+                else:
+                    print(f"Número de carencias inválido: {valor}")
+ 
             else:
                 print(f"Criterio desconocido: {criterio}")
 
@@ -2402,6 +2427,7 @@ class AgenteAnaliticoLLM:
                 }
             }
             
+
         ]
         return tools
 
