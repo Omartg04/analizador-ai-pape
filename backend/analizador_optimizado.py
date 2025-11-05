@@ -568,9 +568,10 @@ class AnalizadorProgramasSociales:
     de programas sociales, con capacidad de segmentación geográfica y por carencias.
     """
     
-    def __init__(self, df_completo: pd.DataFrame):
+    def __init__(self, df_completo: pd.DataFrame, api_key:str):
         """Inicializa el analizador de programas sociales"""
         self.df = df_completo
+        self.api_key=api_key
         
         # Detectar automáticamente los programas disponibles
         self.programas_disponibles = [col for col in self.df.columns if col.startswith('es_elegible_')]
@@ -2098,11 +2099,11 @@ class AnalizadorProgramasSociales:
 class AnalizadorUnidimensional:
     """Coordina todos los módulos especializados - VERSIÓN COMPLETA CORREGIDA"""
     
-    def __init__(self, df_completo: pd.DataFrame):
+    def __init__(self, df_completo: pd.DataFram, api_key: str = None):
         self.df = df_completo
         self.delimitador = DelimitadorPoblacional(df_completo)
         self.demografico = AnalizadorDemografico(df_completo)
-        self.programas = AnalizadorProgramasSociales(df_completo)
+        self.programas = AnalizadorProgramasSociales(df_completo, api_key)
         self.esquema = self._generar_esquema_variables()
         self.generador_tablas = None # Se asignará después
     
@@ -2698,7 +2699,7 @@ class AgenteAnaliticoLLM:
     """Agente que usa LLM + Function Calling con sistema de robustez mejorado - VERSIÓN ACTUALIZADA"""
     def __init__(self, df_completo, api_key: str):
         self.df = df_completo
-        self.analizador = AnalizadorUnidimensional(df_completo)
+        self.analizador = AnalizadorUnidimensional(df_completo, api_key)
         self.client = OpenAI(api_key=api_key, base_url="https://api.deepseek.com/v1", timeout=60.0)
         
         # === PASO 1: CALCULAR CIFRAS REALES ===
@@ -3640,7 +3641,7 @@ def main():
     print("\n🔍 FASE 3: ANÁLISIS EXPLORATORIO")
     print("-" * 70)
     
-    analizador = AnalizadorUnidimensional(df_completo)
+    analizador = AnalizadorUnidimensional(df_completo, API_KEY)
     
     # Inyectar dependencia del generador de tablas (que fue definido después)
     analizador.generador_tablas = GeneradorTablas()
