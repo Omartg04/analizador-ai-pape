@@ -555,10 +555,16 @@ class AnalizadorDemografico:
             "total_colonias_afectadas": df_segmento['colonia'].nunique()
         }
 class AnalizadorProgramasSociales:
-    """Se especializa SOLO en análisis de programas sociales y brechas - VERSIÓN ROBUSTECIDA"""
+    """
+    Clase para analizar elegibilidad y perfil de beneficiarios potenciales
+    de programas sociales, con capacidad de segmentación geográfica y por carencias.
+    """
     
     def __init__(self, df_completo: pd.DataFrame):
+        """Inicializa el analizador de programas sociales"""
         self.df = df_completo
+        
+        # Detectar automáticamente los programas disponibles
         self.programas_disponibles = [col for col in self.df.columns if col.startswith('es_elegible_')]
         self.programas_nombres = [col.replace('es_elegible_', '') for col in self.programas_disponibles]
         
@@ -578,6 +584,10 @@ class AnalizadorProgramasSociales:
             'inea': 'INEA',
             'leche_bienestar': 'Leche Bienestar'
         }
+
+    # ========================================================================
+    # MÉTODOS AUXILIARES DE FILTRADO
+    # ========================================================================
     
     def _obtener_programas_por_carencia(self, carencia: str) -> List[str]:
         """Mapeo mejorado de programas relevantes por tipo de carencia"""
@@ -589,7 +599,7 @@ class AnalizadorProgramasSociales:
                                'ingreso_ciudadano_universal', 'seguro_desempleo_cdmx', 'imss_bienestar']
         }
         return mapeo_programas_carencias.get(carencia, [])
-    
+
     def _aplicar_filtros_basicos(self, grupo_edad: tuple = None, ubicacion: str = None, 
                                sexo: str = None, carencia: str = None) -> pd.DataFrame:
         """Aplica filtros básicos de forma consistente"""
@@ -629,16 +639,19 @@ class AnalizadorProgramasSociales:
                 df_filtrado = df_filtrado[df_filtrado[carencia_map[carencia]] == 'yes']
         
         return df_filtrado
+
+    # ========================================================================
+    # MÉTODO PRINCIPAL: ANÁLISIS DE ELEGIBILIDAD
+    # ========================================================================
     
     def analizar_elegibilidad_programa(self, programa: str, grupo_edad: tuple = None, 
                                      ubicacion: str = None, sexo: str = None,
                                      carencia: str = None, incluir_brecha: bool = True,
                                      segmentacion_geografica: str = None) -> Dict:
         """
-        Análisis DIRECTO y COMPLETO de elegibilidad para un programa específico
-        VERSIÓN ROBUSTECIDA
+        Análisis de elegibilidad para un programa específico
+        Versión final: Solo 5 secciones clave
         """
-        # Validar que el programa existe
         columna_programa = f"es_elegible_{programa}"
         
         if columna_programa not in self.df.columns:
@@ -659,19 +672,70 @@ class AnalizadorProgramasSociales:
         total_elegibles = len(df_elegibles)
         total_poblacion = len(df_filtrado)
         
-        # Análisis de segmentación geográfica
-        analisis_geografico = {}
-        if segmentacion_geografica and segmentacion_geografica in df_elegibles.columns:
-            segmentacion = df_elegibles[segmentacion_geografica].value_counts().head(10)
-            analisis_geografico = {
-                "columna_segmentacion": segmentacion_geografica,
-                "total_segmentos": len(segmentacion),
-                "distribucion": {str(k): int(v) for k, v in segmentacion.items()},
-                "porcentajes": {str(k): float(round((v / total_elegibles * 100), 2)) 
-                              for k, v in segmentacion.items()} if total_elegibles > 0 else {}
-            }
+        # ====================================================================
+        # SECCIÓN 1: POBLACIÓN ELEGIBLE
+        # ====================================================================
+        poblacion_elegible = {
+            "total_elegibles": int(total_elegibles),
+            "tasa_elegibilidad": float(round((total_elegibles / total_poblacion * 100), 2)) if total_poblacion > 0 else 0.0,
+            "hogares_afectados": int(df_elegibles['id_hogar'].nunique()) if total_elegibles > 0 else 0,
+            "porcentaje_del_total_estudio": float(round((total_elegibles / len(self.df) * 100), 2)) if len(self.df) > 0 else 0.0
+        }
         
-        # Construir resultado base
+        # ====================================================================
+        # SECCIÓN 2: PERFIL DE LOS ELEGIBLES
+        # ====================================================================
+        perfil_elegibles = {
+            "edad_promedio": float(round(df_elegibles['edad_persona'].mean(), 1)) if total_elegibles > 0 else 0.0,
+            "edad_minima": int(df_elegibles['edad_persona'].min()) if total_elegibles > 0 else 0,
+            "edad_maxima": int(df_elegibles['edad_persona'].max()) if total_elegibles > 0 else 0,
+            "distribucion_sexo": {
+                str(k): int(v) for k, v in 
+                df_elegibles['sexo_persona'].value_counts().items()
+            } if total_elegibles > 0 else {},
+            "distribucion_sexo_porcentaje": {
+                str(k): float(round((v / total_elegibles * 100), 1)) 
+                for k, v in df_elegibles['sexo_persona'].value_counts().items()
+            } if total_elegibles > 0 else {}
+        }
+        
+        # ====================================================================
+        # SECCIÓN 3: CARENCIAS DETECTADAS ENTRE ELEGIBLES
+        # ====================================================================
+        carencias = [
+            ('presencia_carencia_salud_persona', 'Salud'),
+            ('presencia_rezago_educativo_persona', 'Educación'),
+            ('presencia_carencia_seguridad_social_persona', 'Seguridad Social')
+        ]
+        
+        carencias_detectadas = {}
+        for columna_carencia, nombre_carencia in carencias:
+            if columna_carencia in df_elegibles.columns:
+                total_con_carencia = len(df_elegibles[df_elegibles[columna_carencia] == 'yes'])
+                porcentaje = (total_con_carencia / total_elegibles * 100) if total_elegibles > 0 else 0
+                
+                carencias_detectadas[nombre_carencia] = {
+                    "cantidad": int(total_con_carencia),
+                    "porcentaje": float(round(porcentaje, 2))
+                }
+        
+        # ====================================================================
+        # SECCIÓN 4: CONTEXTO DE LA COLONIA
+        # ====================================================================
+        contexto_colonia = {}
+        if ubicacion:
+            contexto_colonia = self._obtener_contexto_colonia(ubicacion, df_elegibles)
+        
+        # ====================================================================
+        # SECCIÓN 5: COMPARATIVA INTERCOLONIAL
+        # ====================================================================
+        comparativa = {}
+        if ubicacion:
+            comparativa = self._generar_comparativa(programa, ubicacion, df_filtrado)
+        
+        # ====================================================================
+        # RESULTADO FINAL
+        # ====================================================================
         resultado = {
             "programa": programa,
             "nombre_programa": self.mapeo_programas.get(programa, programa),
@@ -681,45 +745,137 @@ class AnalizadorProgramasSociales:
                 "sexo": sexo,
                 "carencia": carencia
             },
-            "metricas_elegibilidad": {
-                "total_poblacion_filtrada": int(total_poblacion),
-                "total_elegibles": int(total_elegibles),
-                "tasa_elegibilidad": float(round((total_elegibles / total_poblacion * 100), 2)) if total_poblacion > 0 else 0.0,
-                "columna_verificada": columna_programa
-            },
-            "perfil_elegibles": {
-                "edad_promedio": float(round(df_elegibles['edad_persona'].mean(), 1)) if total_elegibles > 0 else 0.0,
-                "distribucion_sexo": {str(k): int(v) for k, v in df_elegibles['sexo_persona'].value_counts().items()} if total_elegibles > 0 else {},
-                "hogares_afectados": int(df_elegibles['id_hogar'].nunique()) if total_elegibles > 0 else 0
-            }
+            "seccion_1_poblacion_elegible": poblacion_elegible,
+            "seccion_2_perfil_elegibles": perfil_elegibles,
+            "seccion_3_carencias_detectadas": carencias_detectadas,
+            "seccion_4_contexto_colonia": contexto_colonia,
+            "seccion_5_comparativa": comparativa
         }
         
-        # Agregar análisis geográfico si existe
-        if analisis_geografico:
-            resultado["analisis_geografico"] = analisis_geografico
+        return resultado
+
+    # ========================================================================
+    # MÉTODOS AUXILIARES PARA SECCIONES
+    # ========================================================================
+    
+    def _obtener_contexto_colonia(self, ubicacion: str, df_elegibles: pd.DataFrame) -> Dict:
+        """Obtiene el contexto de la colonia"""
+        df_colonia = self.df[
+            (self.df['colonia'].str.contains(ubicacion, case=False, na=False)) |
+            (self.df['ageb'].str.contains(ubicacion, case=False, na=False)) |
+            (self.df['ubicacion'].str.contains(ubicacion, case=False, na=False))
+        ]
         
-        # Análisis de brecha si se solicita
-        if incluir_brecha and total_elegibles > 0:
-            df_brecha = df_elegibles[df_elegibles['recibe_apoyos_sociales'] == 'no']
-            total_brecha = len(df_brecha)
+        total_colonia = len(df_colonia)
+        hogares_colonia = df_colonia['id_hogar'].nunique()
+        edad_promedio_colonia = df_colonia['edad_persona'].mean()
+        
+        contexto = {
+            "poblacion_total": int(total_colonia),
+            "hogares_totales": int(hogares_colonia),
+            "edad_promedio": float(round(edad_promedio_colonia, 1)),
+            "ranking_colonias": self._obtener_ranking_colonia(ubicacion),
+            "caracteristicas": self._caracterizar_colonia(df_colonia, df_elegibles)
+        }
+        
+        return contexto
+
+    def _obtener_ranking_colonia(self, ubicacion: str) -> Dict:
+        """Obtiene ranking de la colonia en términos de población"""
+        colonias_ranking = self.df['colonia'].value_counts()
+        
+        try:
+            posicion = list(colonias_ranking.index).index(ubicacion) + 1
+            total_colonias = len(colonias_ranking)
+            poblacion_colonia = colonias_ranking[ubicacion]
             
-            resultado["analisis_brecha"] = {
-                "elegibles_sin_ningun_apoyo": int(total_brecha),
-                "tasa_brecha": float(round((total_brecha / total_elegibles * 100), 2)) if total_elegibles > 0 else 0.0,
-                "perfil_brecha": {
-                    "edad_promedio": float(round(df_brecha['edad_persona'].mean(), 1)) if total_brecha > 0 else 0.0,
-                    "distribucion_sexo": {str(k): int(v) for k, v in df_brecha['sexo_persona'].value_counts().items()} if total_brecha > 0 else {}
-                },
-                "interpretacion": "Personas elegibles que NO reciben NINGÚN apoyo social (brecha máxima potencial)"
+            return {
+                "posicion": int(posicion),
+                "de_total": int(total_colonias),
+                "poblacion": int(poblacion_colonia)
+            }
+        except:
+            return {}
+
+    def _caracterizar_colonia(self, df_colonia: pd.DataFrame, df_elegibles: pd.DataFrame) -> Dict:
+        """Caracteriza la colonia en términos de vulnerabilidad"""
+        caracteristicas = {}
+        
+        if len(df_colonia) > 0:
+            carencias_col = {
+                'salud': len(df_colonia[df_colonia['presencia_carencia_salud_persona'] == 'yes']),
+                'educacion': len(df_colonia[df_colonia['presencia_rezago_educativo_persona'] == 'yes']),
+                'seguridad_social': len(df_colonia[df_colonia['presencia_carencia_seguridad_social_persona'] == 'yes'])
+            }
+            
+            caracteristicas = {
+                "nivel_vulnerabilidad": self._clasificar_vulnerabilidad(carencias_col, len(df_colonia)),
+                "carencias_principales": carencias_col
             }
         
-        return resultado
+        return caracteristicas
+
+    def _clasificar_vulnerabilidad(self, carencias: Dict, total: int) -> str:
+        """Clasifica nivel de vulnerabilidad"""
+        if total == 0:
+            return "Sin datos"
+        
+        promedio_carencias = sum(carencias.values()) / len(carencias) / total * 100
+        
+        if promedio_carencias > 60:
+            return "Muy Alta"
+        elif promedio_carencias > 45:
+            return "Alta"
+        elif promedio_carencias > 30:
+            return "Moderada"
+        else:
+            return "Baja"
+
+    def _generar_comparativa(self, programa: str, ubicacion: str, df_filtrado: pd.DataFrame) -> Dict:
+        """Genera comparativa con otras colonias"""
+        columna_programa = f"es_elegible_{programa}"
+        
+        # Top 5 colonias por elegibilidad del programa
+        elegibilidad_por_colonia = df_filtrado.groupby('colonia').apply(
+            lambda x: {
+                'elegibles': len(x[x[columna_programa] == 'yes']),
+                'total': len(x)
+            }
+        )
+        
+        # Calcular tasa
+        comparativa_data = []
+        for colonia, datos in elegibilidad_por_colonia.items():
+            if datos['total'] > 0:
+                tasa = (datos['elegibles'] / datos['total'] * 100)
+                comparativa_data.append({
+                    'colonia': str(colonia),
+                    'elegibles': datos['elegibles'],
+                    'tasa': float(round(tasa, 1))
+                })
+        
+        # Ordenar por elegibles
+        comparativa_data = sorted(comparativa_data, key=lambda x: x['elegibles'], reverse=True)
+        
+        # Encontrar posición de la colonia actual
+        posicion_actual = next(
+            (i+1 for i, x in enumerate(comparativa_data) if x['colonia'].lower() == ubicacion.lower()),
+            None
+        )
+        
+        return {
+            "top_colonias": comparativa_data[:5],
+            "posicion_colonia_actual": posicion_actual,
+            "total_colonias_comparadas": len(comparativa_data)
+        }
+
+    # ========================================================================
+    # MÉTODOS COMPLEMENTARIOS
+    # ========================================================================
     
     def analizar_elegibilidad_multiple(self, programas: List[str], grupo_edad: tuple = None,
                                      ubicacion: str = None, top_n: int = 5) -> Dict:
-        """
-        Analiza elegibilidad para múltiples programas simultáneamente
-        """
+        """Analiza elegibilidad para múltiples programas simultáneamente"""
         resultados = {}
         comparativa = {}
         
@@ -733,29 +889,19 @@ class AnalizadorProgramasSociales:
             
             if "error" not in resultado:
                 resultados[programa] = resultado
-                
-                # Datos para comparativa
-                if "metricas_elegibilidad" in resultado:
-                    metricas = resultado["metricas_elegibilidad"]
-                    comparativa[programa] = {
-                        "total_elegibles": metricas["total_elegibles"],
-                        "tasa_elegibilidad": metricas["tasa_elegibilidad"],
-                        "brecha": resultado.get("analisis_brecha", {}).get("tasa_brecha", 0)
-                    }
+                metricas = resultado.get('seccion_1_poblacion_elegible', {})
+                comparativa[programa] = {
+                    "total_elegibles": metricas.get("total_elegibles", 0),
+                    "tasa_elegibilidad": metricas.get("tasa_elegibilidad", 0)
+                }
         
-        # Análisis comparativo
         if comparativa:
             programas_ordenados = sorted(comparativa.keys(), 
                                        key=lambda x: comparativa[x]["total_elegibles"], 
                                        reverse=True)
             
             analisis_comparativo = {
-                "programa_mayor_elegibilidad": max(comparativa.keys(), 
-                                                 key=lambda x: comparativa[x]["tasa_elegibilidad"]),
-                "programa_menor_elegibilidad": min(comparativa.keys(), 
-                                                 key=lambda x: comparativa[x]["tasa_elegibilidad"]),
-                "programa_mayor_brecha": max(comparativa.keys(), 
-                                           key=lambda x: comparativa[x]["brecha"]),
+                "programa_mayor_elegibilidad": programas_ordenados[0] if programas_ordenados else None,
                 "ranking_elegibles": programas_ordenados[:top_n]
             }
         else:
@@ -766,87 +912,247 @@ class AnalizadorProgramasSociales:
             "analisis_comparativo": analisis_comparativo,
             "resumen": {
                 "total_programas_analizados": len(resultados),
-                "total_elegibles_todos": sum(r["metricas_elegibilidad"]["total_elegibles"] 
-                                           for r in resultados.values())
-            }
-        }
-    
-    def analizar_cobertura_geografica(self, programa: str, nivel_geografico: str = "ageb",
-                                    top_n: int = 10) -> Dict:
-        """
-        Análisis específico de cobertura geográfica por AGEB o colonia
-        """
-        if nivel_geografico not in ['ageb', 'colonia']:
-            return {"error": "Nivel geográfico debe ser 'ageb' o 'colonia'"}
-        
-        columna_programa = f"es_elegible_{programa}"
-        if columna_programa not in self.df.columns:
-            return {"error": f"Programa {programa} no encontrado"}
-        
-        # Filtrar elegibles
-        df_elegibles = self.df[self.df[columna_programa] == 'yes']
-        
-        if len(df_elegibles) == 0:
-            return {"error": f"No hay personas elegibles para {programa}"}
-        
-        # Análisis por nivel geográfico
-        distribucion = df_elegibles[nivel_geografico].value_counts().head(top_n)
-        total_elegibles = len(df_elegibles)
-        
-        # Calcular densidad (elegibles por cada 1000 personas en esa zona)
-        densidad_data = {}
-        for zona in distribucion.index:
-            total_zona = len(self.df[self.df[nivel_geografico] == zona])
-            elegibles_zona = distribucion[zona]
-            densidad = (elegibles_zona / total_zona * 1000) if total_zona > 0 else 0
-            densidad_data[str(zona)] = round(densidad, 2)
-        
-        return {
-            "programa": programa,
-            "nivel_geografico": nivel_geografico,
-            "metricas_generales": {
-                "total_elegibles": int(total_elegibles),
-                "total_zonas_analizadas": len(distribucion),
-                "zonas_con_elegibles": self.df[self.df[columna_programa] == 'yes'][nivel_geografico].nunique()
-            },
-            "distribucion_geografica": {
-                "zonas": [str(k) for k in distribucion.index],
-                "conteos": [int(v) for v in distribucion.values],
-                "porcentajes": [float(round((v / total_elegibles * 100), 2)) for v in distribucion.values],
-                "densidad_por_mil": densidad_data
-            },
-            "analisis_intensidad": {
-                "zona_mayor_cobertura": distribucion.index[0] if len(distribucion) > 0 else None,
-                "zona_menor_cobertura": distribucion.index[-1] if len(distribucion) > 1 else None,
-                "rango_conteos": f"{distribucion.min() if len(distribucion) > 0 else 0} - {distribucion.max() if len(distribucion) > 0 else 0}"
+                "total_elegibles_todos": sum(c.get("total_elegibles", 0) for c in comparativa.values())
             }
         }
 
-    # MÉTODOS EXISTENTES (se mantienen por compatibilidad)
-    def analizar_brechas_programa_grupo(self, programa: str, grupo_edad: tuple = None, ubicacion: str = None) -> Dict:
-        """Método legacy - redirige al nuevo método"""
-        return self.analizar_elegibilidad_programa(
-            programa=programa,
-            grupo_edad=grupo_edad,
-            ubicacion=ubicacion,
-            incluir_brecha=True
-        )
-    
-    def identificar_carencias_sin_cobertura(self, carencia: str, grupo_edad: tuple = None) -> Dict:
-        """Mantenido por compatibilidad"""
-        # Implementación existente...
-        pass
-    
-    def analizar_intensidad_carencias(self, grupo_edad: tuple = None):
-        """Mantenido por compatibilidad"""
-        # Implementación existente...
-        pass
-    
-    def analizar_brechas_multiprograma(self, programas: List[str], grupo_edad: tuple = None) -> Dict:
-        """Mantenido por compatibilidad"""
-        # Implementación existente...
-        pass
+    def identificar_carencias_sin_cobertura(self, carencia: str, grupo_edad: tuple = None, 
+                                           ubicacion: str = None) -> Dict:
+        """Personas con carencias que NO son elegibles para programas relacionados"""
+        print(f"🔍 [CARENCIAS_SIN_COBERTURA] Iniciando análisis...")
+        
+        try:
+            carencia_map = {
+                'salud': 'presencia_carencia_salud_persona',
+                'educacion': 'presencia_rezago_educativo_persona',
+                'seguridad_social': 'presencia_carencia_seguridad_social_persona'
+            }
+            
+            if carencia not in carencia_map:
+                return {"error": f"Carencia '{carencia}' no reconocida. Válidas: {list(carencia_map.keys())}"}
+            
+            columna_carencia = carencia_map[carencia]
+            
+            if columna_carencia not in self.df.columns:
+                return {"error": f"Columna de carencia no encontrada: {columna_carencia}"}
+            
+            # Filtrar población con la carencia
+            df_con_carencia = self.df[self.df[columna_carencia] == 'yes'].copy()
+            
+            if len(df_con_carencia) == 0:
+                return {"error": f"No hay personas con carencia de {carencia}"}
+            
+            # Aplicar filtros adicionales
+            if grupo_edad:
+                edad_min, edad_max = grupo_edad
+                df_con_carencia = df_con_carencia[
+                    (df_con_carencia['edad_persona'] >= edad_min) & 
+                    (df_con_carencia['edad_persona'] <= edad_max)
+                ]
+            
+            if ubicacion:
+                mascara_ubicacion = (
+                    df_con_carencia['colonia'].str.contains(ubicacion, case=False, na=False) |
+                    df_con_carencia['ageb'].str.contains(ubicacion, case=False, na=False) |
+                    df_con_carencia['ubicacion'].str.contains(ubicacion, case=False, na=False)
+                )
+                df_con_carencia = df_con_carencia[mascara_ubicacion]
+            
+            total_con_carencia = len(df_con_carencia)
+            
+            # Obtener programas relacionados
+            programas_relacionados = self._obtener_programas_por_carencia(carencia)
+            
+            if not programas_relacionados:
+                return {"error": f"No hay programas relacionados con carencia de {carencia}"}
+            
+            # Identificar personas sin elegibilidad para programas
+            df_sin_cobertura = df_con_carencia.copy()
+            
+            mascara_elegible = None
+            for programa in programas_relacionados:
+                columna_programa = f"es_elegible_{programa}"
+                if columna_programa in self.df.columns:
+                    if mascara_elegible is None:
+                        mascara_elegible = (df_con_carencia[columna_programa] == 'yes')
+                    else:
+                        mascara_elegible |= (df_con_carencia[columna_programa] == 'yes')
+            
+            if mascara_elegible is None:
+                personas_sin_cobertura = df_con_carencia
+            else:
+                personas_sin_cobertura = df_con_carencia[~mascara_elegible]
+            
+            total_sin_cobertura = len(personas_sin_cobertura)
+            tasa_brecha = (total_sin_cobertura / total_con_carencia * 100) if total_con_carencia > 0 else 0
+            
+            # Perfil de brecha
+            perfil_brecha = {}
+            if total_sin_cobertura > 0:
+                perfil_brecha = {
+                    "edad_promedio": float(round(personas_sin_cobertura['edad_persona'].mean(), 1)),
+                    "edad_minima": int(personas_sin_cobertura['edad_persona'].min()),
+                    "edad_maxima": int(personas_sin_cobertura['edad_persona'].max()),
+                    "distribucion_sexo": {
+                        str(k): int(v) for k, v in 
+                        personas_sin_cobertura['sexo_persona'].value_counts().items()
+                    },
+                    "hogares_afectados": int(personas_sin_cobertura['id_hogar'].nunique())
+                }
+            
+            resultado = {
+                "tipo_analisis": "carencias_sin_cobertura",
+                "carencia": carencia,
+                "metricas_principales": {
+                    "total_personas_con_carencia": int(total_con_carencia),
+                    "total_personas_sin_cobertura": int(total_sin_cobertura),
+                    "tasa_brecha": float(round(tasa_brecha, 2))
+                },
+                "programas_relacionados_analizados": programas_relacionados,
+                "perfil_brecha": perfil_brecha
+            }
+            
+            print(f"✅ [CARENCIAS_SIN_COBERTURA] Análisis completado exitosamente")
+            return resultado
+            
+        except Exception as e:
+            print(f"❌ Error: {str(e)}")
+            return {"error": f"Error analizando carencias: {str(e)}"}
 
+    def analizar_intensidad_carencias(self, grupo_edad: tuple = None, ubicacion: str = None) -> Dict:
+        """Analiza personas con múltiples carencias simultáneas"""
+        print(f"🔍 [INTENSIDAD_CARENCIAS] Iniciando análisis...")
+        
+        try:
+            df_analisis = self.df.copy()
+            
+            if grupo_edad:
+                edad_min, edad_max = grupo_edad
+                df_analisis = df_analisis[
+                    (df_analisis['edad_persona'] >= edad_min) & 
+                    (df_analisis['edad_persona'] <= edad_max)
+                ]
+            
+            if ubicacion:
+                mascara_ubicacion = (
+                    df_analisis['colonia'].str.contains(ubicacion, case=False, na=False) |
+                    df_analisis['ageb'].str.contains(ubicacion, case=False, na=False) |
+                    df_analisis['ubicacion'].str.contains(ubicacion, case=False, na=False)
+                )
+                df_analisis = df_analisis[mascara_ubicacion]
+            
+            columnas_carencias = [
+                'presencia_carencia_salud_persona',
+                'presencia_rezago_educativo_persona',
+                'presencia_carencia_seguridad_social_persona'
+            ]
+            
+            columnas_validas = [col for col in columnas_carencias if col in df_analisis.columns]
+            
+            df_analisis['total_carencias'] = 0
+            for col in columnas_validas:
+                df_analisis['total_carencias'] += (df_analisis[col] == 'yes').astype(int)
+            
+            distribucion_intensidad = df_analisis['total_carencias'].value_counts().sort_index()
+            
+            personas_sin_carencias = len(df_analisis[df_analisis['total_carencias'] == 0])
+            personas_1_carencia = len(df_analisis[df_analisis['total_carencias'] == 1])
+            personas_2_carencias = len(df_analisis[df_analisis['total_carencias'] == 2])
+            personas_3_carencias = len(df_analisis[df_analisis['total_carencias'] == 3])
+            
+            total_personas = len(df_analisis)
+            
+            personas_vulnerabilidad_extrema = df_analisis[df_analisis['total_carencias'] == 3]
+            
+            resultado = {
+                "tipo_analisis": "intensidad_carencias",
+                "distribucion_intensidad": {
+                    "sin_carencias": {
+                        "cantidad": int(personas_sin_carencias),
+                        "porcentaje": float(round((personas_sin_carencias / total_personas * 100), 2))
+                    },
+                    "una_carencia": {
+                        "cantidad": int(personas_1_carencia),
+                        "porcentaje": float(round((personas_1_carencia / total_personas * 100), 2))
+                    },
+                    "dos_carencias": {
+                        "cantidad": int(personas_2_carencias),
+                        "porcentaje": float(round((personas_2_carencias / total_personas * 100), 2))
+                    },
+                    "tres_carencias": {
+                        "cantidad": int(personas_3_carencias),
+                        "porcentaje": float(round((personas_3_carencias / total_personas * 100), 2))
+                    }
+                },
+                "poblacion_vulnerabilidad_extrema": {
+                    "total": int(len(personas_vulnerabilidad_extrema)),
+                    "porcentaje": float(round((len(personas_vulnerabilidad_extrema) / total_personas * 100), 2))
+                }
+            }
+            
+            print(f"✅ [INTENSIDAD_CARENCIAS] Análisis completado exitosamente")
+            return resultado
+            
+        except Exception as e:
+            print(f"❌ Error: {str(e)}")
+            return {"error": f"Error analizando intensidad: {str(e)}"}
+
+    def analizar_brechas_multiprograma(self, programas: List[str], grupo_edad: tuple = None,
+                                      ubicacion: str = None) -> Dict:
+        """Analiza y compara brechas entre múltiples programas"""
+        print(f"🔍 [BRECHAS_MULTIPROGRAMA] Iniciando análisis comparativo...")
+        
+        try:
+            resultados_programas = {}
+            comparativa = {}
+            
+            for programa in programas:
+                resultado = self.analizar_elegibilidad_programa(
+                    programa=programa,
+                    grupo_edad=grupo_edad,
+                    ubicacion=ubicacion,
+                    incluir_brecha=True
+                )
+                
+                if "error" not in resultado:
+                    resultados_programas[programa] = resultado
+                    metricas = resultado.get('seccion_1_poblacion_elegible', {})
+                    comparativa[programa] = {
+                        "total_elegibles": metricas.get("total_elegibles", 0),
+                        "tasa_elegibilidad": metricas.get("tasa_elegibilidad", 0)
+                    }
+            
+            if comparativa:
+                programas_ordenados = sorted(
+                    comparativa.keys(),
+                    key=lambda x: comparativa[x]["total_elegibles"],
+                    reverse=True
+                )
+                
+                analisis_comparativo = {
+                    "programa_mas_cobertura": programas_ordenados[0] if programas_ordenados else None,
+                    "ranking_por_elegibles": programas_ordenados
+                }
+            else:
+                analisis_comparativo = {}
+            
+            resultado_final = {
+                "tipo_analisis": "brechas_multiprograma",
+                "resultados_por_programa": resultados_programas,
+                "comparativa_resumida": comparativa,
+                "analisis_comparativo": analisis_comparativo,
+                "resumen_general": {
+                    "total_programas_analizados": len(resultados_programas),
+                    "total_elegibles_agregado": sum(c["total_elegibles"] for c in comparativa.values())
+                }
+            }
+            
+            print(f"✅ [BRECHAS_MULTIPROGRAMA] Análisis completado exitosamente")
+            return resultado_final
+            
+        except Exception as e:
+            print(f"❌ Error: {str(e)}")
+            return {"error": f"Error analizando brechas: {str(e)}"}
 # ============================================================================
 # 3. COORDINADOR ANALÍTICO PRINCIPAL (REEMPLAZADO)
 # ============================================================================
@@ -936,41 +1242,24 @@ class GeneradorTablas:
             from tabulate import tabulate
             return tabulate(df, headers='keys', tablefmt='grid', showindex=False)
 
-        """Explora las ubicaciones geográficas disponibles en el dataset"""
-        return {
-            "colonias_mas_pobladas": {
-                "total_colonias": self.df['colonia'].nunique(),
-                "top_colonias": self.df['colonia'].value_counts().head(top_n).to_dict()
-            },
-            "agebs_mas_poblados": {
-                "total_agebs": self.df['ageb'].nunique(), 
-                "top_agebs": self.df['ageb'].value_counts().head(top_n).to_dict()
-            },
-            "ubicaciones_unicas": {
-                "total_ubicaciones": self.df['ubicacion'].nunique(),
-                "distribucion_ubicacion": self.df['ubicacion'].value_counts().to_dict()
-            }
-        }
 
 # ============================================================================
 # 4. AGENTE LLM ACTUALIZADO CON NUEVAS HERRAMIENTAS
 # ============================================================================
 class AgenteAnaliticoLLM:
     """Agente que usa LLM + Function Calling con sistema de robustez mejorado - VERSIÓN ACTUALIZADA"""
-    
     def __init__(self, df_completo, api_key: str):
         self.df = df_completo
         self.analizador = AnalizadorUnidimensional(df_completo)
-        self.client = OpenAI(api_key=api_key, base_url="https://api.deepseek.com")
-        self.messages = []
+        self.client = OpenAI(api_key=api_key, base_url="https://api.deepseek.com/v1", timeout=60.0)
         
-        # ✅ USAR CIFRAS REALES DEL DATASET COMPLETO
+        # === PASO 1: CALCULAR CIFRAS REALES ===
         total_personas = len(df_completo)
         total_hogares = df_completo['id_hogar'].nunique()
         total_colonias = df_completo['colonia'].nunique()
         total_agebs = df_completo['ageb'].nunique()
         
-        # Contexto mejorado con cifras reales
+        # === PASO 2: CONSTRUIR TU CONTEXTO COMPLETO ===
         contexto = f"""
         Eres un analista especializado en política social con capacidades avanzadas de análisis de brechas.
         
@@ -998,8 +1287,10 @@ class AgenteAnaliticoLLM:
         - PARA CONSULTAS GEOGRÁFICAS → Usa 'segmentacion_geografica' en analizar_flujo_completo
         
         Responde de manera natural y enfocada en insights accionables.
-        """
-        self.messages.append({"role": "system", "content": contexto})
+        """.strip()
+
+        # === PASO 3: INICIALIZAR messages CON TU CONTEXTO ===
+        self.messages = [{"role": "system", "content": contexto}]
 
     def _definir_herramientas_analisis(self):
         """Define las funciones disponibles para el LLM - VERSIÓN COMPLETA ACTUALIZADA"""
@@ -1561,48 +1852,6 @@ class AgenteAnaliticoLLM:
         respuesta += "💡 **Ejemplo seguro:** 'Adultos mayores sin pensión por colonia'"
         
         return respuesta
-
-    def procesar_consulta_mejorado(self, consulta_usuario: str) -> str:
-        """Versión mejorada con sistema de robustez"""
-        print(f"\n👤 USUARIO: {consulta_usuario}")
-        
-        try:
-            # PASO 1: Detectar ambigüedades
-            analisis_ambiguedad = self.detectar_ambiguedades(consulta_usuario)
-            
-            if analisis_ambiguedad['hay_ambiguedad']:
-                respuesta_clarificacion = self.generar_respuesta_clarificacion(
-                    analisis_ambiguedad['ambiguedades']
-                )
-                print("🔍 Detectada ambigüedad - solicitando clarificación")
-                return respuesta_clarificacion
-            
-            # PASO 2: Traducción de términos naturales
-            traduccion = self.analizador.traducir_consulta_natural(consulta_usuario)
-            print(f"🔍 Auto-traducción: {traduccion['terminos_mapeados']}")
-            
-            # PASO 3: Si no detecta variables, sugerencias contextuales mejoradas
-            if traduccion['estado'] == "sin_criterios_detectados":
-                print("🔍 Sin criterios detectados - generando sugerencias contextuales")
-                return self._generar_sugerencias_contextuales_mejoradas(consulta_usuario)
-            
-            # PASO 4: Validación de variables detectadas
-            validacion = self.analizador.validar_variables_mejorado(traduccion)
-            if not validacion['ejecutable']:
-                print(f"🔍 Problemas de validación: {validacion}")
-                if validacion['variables_invalidas']:
-                    return self._generar_respuesta_variables_invalidas(validacion, consulta_usuario)
-                else:
-                    return self._generar_sugerencias_contextuales_mejoradas(consulta_usuario)
-            
-            # PASO 5: Procesamiento normal
-            print("🔍 Consulta válida - procesando con LLM...")
-            return self.procesar_consulta(consulta_usuario)
-            
-        except Exception as e:
-            # PASO 6: Manejo elegante de errores inesperados
-            print(f"🔴 ERROR: {type(e).__name__}: {str(e)}")
-            return self._generar_respuesta_error_amigable(e, consulta_usuario)
 
     # ============================================================================
     # MÉTODO PRINCIPAL ACTUALIZADO
