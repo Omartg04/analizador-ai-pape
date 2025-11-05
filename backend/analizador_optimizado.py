@@ -2668,9 +2668,9 @@ class AgenteAnaliticoLLM:
             print(f"🔍 Auto-traducción: {traduccion['terminos_mapeados']}")
             
             # PASO 3: Si no detecta variables, sugerencias contextuales mejoradas
-            if traduccion['estado'] == "sin_criterios_detectados":
-                print("🔍 Sin criterios detectados - generando sugerencias contextuales")
-                return self._generar_sugerencias_contextuales_mejoradas(consulta_usuario)
+            #if traduccion['estado'] == "sin_criterios_detectados":
+                #print("🔍 Sin criterios detectados - generando sugerencias contextuales")
+                #return self._generar_sugerencias_contextuales_mejoradas(consulta_usuario)
             
             # PASO 4: Validación de variables detectadas
             print(f"🔍 ANTES de validar_variables_mejorado")
