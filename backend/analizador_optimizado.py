@@ -2099,7 +2099,7 @@ class AnalizadorProgramasSociales:
 class AnalizadorUnidimensional:
     """Coordina todos los módulos especializados - VERSIÓN COMPLETA CORREGIDA"""
     
-    def __init__(self, df_completo: pd.DataFram, api_key: str = None):
+    def __init__(self, df_completo: pd.DataFrame, api_key: str = None):
         self.df = df_completo
         self.delimitador = DelimitadorPoblacional(df_completo)
         self.demografico = AnalizadorDemografico(df_completo)
