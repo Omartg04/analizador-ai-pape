@@ -1358,25 +1358,35 @@ class AnalizadorUnidimensional:
             'salud': {'tipo': 'columna', 'valor': 'presencia_carencia_salud_persona', 'filtro': 'yes'},
             'sin salud': {'tipo': 'columna', 'valor': 'presencia_carencia_salud_persona', 'filtro': 'yes'},
             'acceso a salud': {'tipo': 'columna', 'valor': 'presencia_carencia_salud_persona', 'filtro': 'yes'},
+            'carencia acceso a salud': {'tipo': 'columna', 'valor': 'presencia_carencia_salud_persona', 'filtro': 'yes'},
             
             'carencia de educación': {'tipo': 'columna', 'valor': 'presencia_rezago_educativo_persona', 'filtro': 'yes'},
             'carencia educación': {'tipo': 'columna', 'valor': 'presencia_rezago_educativo_persona', 'filtro': 'yes'},
             'rezago educativo': {'tipo': 'columna', 'valor': 'presencia_rezago_educativo_persona', 'filtro': 'yes'},
             'educación': {'tipo': 'columna', 'valor': 'presencia_rezago_educativo_persona', 'filtro': 'yes'},
             'sin educación': {'tipo': 'columna', 'valor': 'presencia_rezago_educativo_persona', 'filtro': 'yes'},
+            'sin acceso a educación': {'tipo': 'columna', 'valor': 'presencia_rezago_educativo_persona', 'filtro': 'yes'},
+            'analfabeta': {'tipo': 'columna', 'valor': 'presencia_rezago_educativo_persona', 'filtro': 'yes'},
+            'sin asistir a escuela': {'tipo': 'columna', 'valor': 'presencia_rezago_educativo_persona', 'filtro': 'yes'},
+            'inasistencia escolar': {'tipo': 'columna', 'valor': 'presencia_rezago_educativo_persona', 'filtro': 'yes'},
+            'sin escuela': {'tipo': 'columna', 'valor': 'presencia_rezago_educativo_persona', 'filtro': 'yes'},
             
             'carencia de seguridad social': {'tipo': 'columna', 'valor': 'presencia_carencia_seguridad_social_persona', 'filtro': 'yes'},
             'carencia seguridad social': {'tipo': 'columna', 'valor': 'presencia_carencia_seguridad_social_persona', 'filtro': 'yes'},
             'seguridad social': {'tipo': 'columna', 'valor': 'presencia_carencia_seguridad_social_persona', 'filtro': 'yes'},
             'sin seguridad social': {'tipo': 'columna', 'valor': 'presencia_carencia_seguridad_social_persona', 'filtro': 'yes'},
-            'carencia social': {'tipo': 'columna', 'valor': 'presencia_carencia_seguridad_social_persona', 'filtro': 'yes'},
+            'inseguridad social': {'tipo': 'columna', 'valor': 'presencia_carencia_seguridad_social_persona', 'filtro': 'yes'},
+            'sin acceso a seguridad social': {'tipo': 'columna', 'valor': 'presencia_carencia_seguridad_social_persona', 'filtro': 'yes'},
+            'no afiliada': {'tipo': 'columna', 'valor': 'presencia_carencia_seguridad_social_persona', 'filtro': 'yes'},
+            'sin cobertura seguridad social': {'tipo': 'columna', 'valor': 'presencia_carencia_seguridad_social_persona', 'filtro': 'yes'},
             
             # ==================== CARENCIAS COMPLEJAS ====================
             'carencia máxima': {'tipo': 'multiple_carencias', 'valor': 3},
-            'múltiples carencias': {'tipo': 'multiple_carencias', 'valor': 2},
+            'múltiples carencias': {'tipo': 'multiple_carencias', 'valor': 3},
             'carencia extrema': {'tipo': 'multiple_carencias', 'valor': 3},
             'vulnerabilidad extrema': {'tipo': 'multiple_carencias', 'valor': 3},
-            'mayor carencia': {'tipo': 'multiple_carencias', 'valor': 2},
+            'mayor carencia': {'tipo': 'multiple_carencias', 'valor': 3},
+            'pobreza extrema': {'tipo': 'multiple_carencias', 'valor': 3},
             
             # ==================== VARIABLES DEMOGRÁFICAS ====================
             'edad': {'tipo': 'columna', 'valor': 'edad_persona'},
