@@ -1407,8 +1407,8 @@ class AnalizadorUnidimensional:
             'apoyos sociales': {'tipo': 'columna', 'valor': 'recibe_apoyos_sociales'},
             'recibe apoyos': {'tipo': 'columna', 'valor': 'recibe_apoyos_sociales'},
             'beneficiario': {'tipo': 'columna', 'valor': 'recibe_apoyos_sociales'},
-            
-            # ==================== PROGRAMAS SOCIALES (NOMBRES EXACTOS) ====================
+
+           # ==================== PROGRAMAS SOCIALES (NOMBRES EXACTOS) ====================
             'pensión adultos mayores': {'tipo': 'programa', 'valor': 'pension_adultos_mayores'},
             'pensión mujeres': {'tipo': 'programa', 'valor': 'pension_mujeres_bienestar'},
             'mujeres bienestar': {'tipo': 'programa', 'valor': 'pension_mujeres_bienestar'},
@@ -1442,12 +1442,33 @@ class AnalizadorUnidimensional:
              'pueden recibir': {'tipo': 'concepto_elegibilidad', 'valor': 'elegibilidad'},
              'califican para': {'tipo': 'concepto_elegibilidad', 'valor': 'elegibilidad'},
              'personas que pueden': {'tipo': 'concepto_elegibilidad', 'valor': 'elegibilidad'},
+
+            # ==================== NUEVOS: TÉRMINOS GENERALES ====================
+            'total personas': {'tipo': 'general', 'accion': 'conteo_total'},
+            'cuántas personas': {'tipo': 'general', 'accion': 'conteo_total'},
+            'número de personas': {'tipo': 'general', 'accion': 'conteo_total'},
+            'cuántas hay': {'tipo': 'general', 'accion': 'conteo_total'},
+            'total de personas': {'tipo': 'general', 'accion': 'conteo_total'},
+
+            'personas por edad': {'tipo': 'columna', 'valor': 'edad_persona'},
+            'distribución por edad': {'tipo': 'columna', 'valor': 'edad_persona'},
+            'por edad': {'tipo': 'columna', 'valor': 'edad_persona'},
+
+            'personas por sexo': {'tipo': 'columna', 'valor': 'sexo_persona'},
+            'distribución por sexo': {'tipo': 'columna', 'valor': 'sexo_persona'},
+            'por sexo': {'tipo': 'columna', 'valor': 'sexo_persona'},
+
+            'por edad y sexo': {'tipo': 'tabla_cruzada', 'filas': 'edad_persona', 'columnas': 'sexo_persona'},
+            'edad y sexo': {'tipo': 'tabla_cruzada', 'filas': 'edad_persona', 'columnas': 'sexo_persona'},
+            'distribución por edad y sexo': {'tipo': 'tabla_cruzada', 'filas': 'edad_persona', 'columnas': 'sexo_persona'},
+
+ 
         }
         return mapeo_grupos
 
     def traducir_consulta_natural(self, consulta: str) -> Dict[str, Any]:
         """TRADUCCIÓN MEJORADA - Convierte términos naturales a criterios ejecutables - VERSIÓN DEFINITIVA"""
-        print(f"🔍 Traduciendo consulta: {consulta}")
+        print(f"Traduciendo consulta: {consulta}")
         
         criterios = {}
         variables_detectadas = []
@@ -1461,34 +1482,50 @@ class AnalizadorUnidimensional:
             texto_consulta = consulta.lower()
             # CORRECCIÓN: Ordenar términos por longitud (más específicos primero)
             terminos_ordenados = sorted(mapeo_completo.keys(), key=len, reverse=True)
-            print(f"🔍 Búsqueda en texto: '{texto_consulta}'")
-            print(f"🔍 Términos ordenados por especificidad: {terminos_ordenados[:10]}...")
+            print(f"Búsqueda en texto: '{texto_consulta}'")
+            print(f"Términos ordenados por especificidad: {terminos_ordenados[:10]}...")
             # Debug: mostrar qué términos están disponibles
-            print(f"🔍 Mapeo disponible: {len(mapeo_completo)} términos")
+            print(f"Mapeo disponible: {len(mapeo_completo)} términos")
             
-            # Buscar términos en orden de especificidad (más largos primero)
+            # === FOR COMPLETO MODIFICADO CON SOPORTE PARA GENERAL Y TABLA CRUZADA ===
             for termino_natural in terminos_ordenados:
                 if termino_natural in texto_consulta:
                     mapeo = mapeo_completo[termino_natural]
                     terminos_mapeados[termino_natural] = mapeo
                     
-                    # Aplicar mapeo según tipo
-                    if mapeo['tipo'] == 'rango_edad':
+                    # === TIPO: general (ej: "cuántas personas hay") ===
+                    if mapeo['tipo'] == 'general':
+                        criterios['accion_general'] = mapeo['accion']
+                        variables_detectadas.append('general')
+                        print(f"GENERAL DETECTADO: {mapeo['accion']} → se pasará al LLM")
+
+                    # === TIPO: tabla_cruzada (ej: "por edad y sexo") ===
+                    elif mapeo['tipo'] == 'tabla_cruzada':
+                        criterios['tabla_cruzada'] = {
+                            'filas': mapeo['filas'],
+                            'columnas': mapeo['columnas']
+                        }
+                        variables_detectadas.extend([mapeo['filas'], mapeo['columnas']])
+                        print(f"TABLA CRUZADA: {mapeo['filas']} vs {mapeo['columnas']}")
+
+                    # === TIPO: rango_edad (niños, adultos, etc.) ===
+                    elif mapeo['tipo'] == 'rango_edad':
                         if 'rango_edad' not in criterios:
                             criterios['rango_edad'] = mapeo['valor']
-                        # Usar nombres descriptivos para evitar conflictos
                             edad_minima = mapeo['valor'][0]
                             edad_maxima = mapeo['valor'][1]
                             variables_detectadas.append(f"rango_edad_{edad_minima}_{edad_maxima}")
-                            print(f"✅ Aplicado rango edad: {mapeo['valor']} para término '{termino_natural}'")
+                            print(f"Aplicado rango edad: {mapeo['valor']} para término '{termino_natural}'")
                         else:
-                            print(f"⚠️  Ignorado rango edad: {mapeo['valor']} para '{termino_natural}' (ya existe rango)")
+                            print(f"Ignorado rango edad: {mapeo['valor']} para '{termino_natural}' (ya existe rango)")
 
+                    # === TIPO: sexo (hombres, mujeres) ===
                     elif mapeo['tipo'] == 'sexo':
                         criterios['sexo'] = mapeo['valor']
                         variables_detectadas.append('sexo_persona')
-                        print(f"✅ Aplicado sexo: {mapeo['valor']} para '{termino_natural}'")
+                        print(f"Aplicado sexo: {mapeo['valor']} para '{termino_natural}'")
 
+                    # === TIPO: columna (edad_persona, carencias, etc.) ===
                     elif mapeo['tipo'] == 'columna':
                         variables_detectadas.append(mapeo['valor'])
                         
@@ -1496,41 +1533,42 @@ class AnalizadorUnidimensional:
                         if 'filtro' in mapeo:
                             if 'salud' in termino_natural:
                                 criterios['carencia_salud'] = True
-                                print(f"✅ Aplicada carencia salud para '{termino_natural}'")
+                                print(f"Aplicada carencia salud para '{termino_natural}'")
                             elif 'educación' in termino_natural or 'educacion' in termino_natural or 'rezago' in termino_natural:
                                 criterios['carencia_educacion'] = True
-                                print(f"✅ Aplicada carencia educación para '{termino_natural}'")
+                                print(f"Aplicada carencia educación para '{termino_natural}'")
                             elif 'seguridad_social' in termino_natural or 'social' in termino_natural:
                                 criterios['carencia_seguridad_social'] = True
-                                print(f"✅ Aplicada carencia seguridad social para '{termino_natural}'")
+                                print(f"Aplicada carencia seguridad social para '{termino_natural}'")
                     
+                    # === TIPO: programa (Prospera, etc.) ===
                     elif mapeo['tipo'] == 'programa':
                         criterios['programa_social'] = mapeo['valor']
                         variables_detectadas.append(f"es_elegible_{mapeo['valor']}")
-                        print(f"✅ Aplicado programa: {mapeo['valor']} para '{termino_natural}'")
+                        print(f"Aplicado programa: {mapeo['valor']} para '{termino_natural}'")
+            # === FIN DEL FOR ===
             
             # Detectar segmentación geográfica automática
             if any(geo in texto_consulta for geo in ['por ageb', 'por colonia', 'por ubicación', 'por zona']):
                 if 'ageb' in texto_consulta:
                     criterios['segmentacion_geografica'] = 'ageb'
-                    print("✅ Detectada segmentación geográfica: ageb")
-
+                    print("Detectada segmentación geográfica: ageb")
                 elif 'colonia' in texto_consulta:
                     criterios['segmentacion_geografica'] = 'colonia'
-                    print("✅ Detectada segmentación geográfica: colonia")
+                    print("Detectada segmentación geográfica: colonia")
                 elif 'ubicación' in texto_consulta or 'zona' in texto_consulta:
                     criterios['segmentacion_geografica'] = 'ubicacion'
-                    print("✅ Detectada segmentación geográfica: ubicacion")
+                    print("Detectada segmentación geográfica: ubicacion")
             
             # Detectar ordenamiento
             if any(orden in texto_consulta for orden in ['mayor', 'más', 'top', 'principal']):
                 criterios['ordenamiento'] = 'descendente'
-                print("✅ Detectado ordenamiento: descendente")
+                print("Detectado ordenamiento: descendente")
             elif any(orden in texto_consulta for orden in ['menor', 'menos']):
                 criterios['ordenamiento'] = 'ascendente'
-                print("✅ Detectado ordenamiento: ascendente")
+                print("Detectado ordenamiento: ascendente")
                 
-            print(f"🎯 TRADUCCIÓN FINALIZADA:")
+            print(f"TRADUCCIÓN FINALIZADA:")
             print(f"   - Criterios: {criterios}")
             print(f"   - Variables detectadas: {list(set(variables_detectadas))}")
             print(f"   - Términos mapeados: {list(terminos_mapeados.keys())}")
@@ -1540,13 +1578,13 @@ class AnalizadorUnidimensional:
                 "criterios_demograficos": criterios,
                 "variables_detectadas": list(set(variables_detectadas)),
                 "terminos_mapeados": terminos_mapeados,
-                "estado": "éxito" if criterios else "sin_criterios_detectados"
+                "estado": "éxito" if criterios or variables_detectadas else "sin_criterios_detectados"
             }
             
         except Exception as e:
-            print(f"❌ Error en traducción: {str(e)}")
+            print(f"Error en traducción: {str(e)}")
             import traceback
-            print(f"🔴 Traceback completo: {traceback.format_exc()}")
+            print(f"Traceback completo: {traceback.format_exc()}")
             return {
                 "consulta_original": consulta,
                 "criterios_demograficos": {},
@@ -1556,70 +1594,102 @@ class AnalizadorUnidimensional:
                 "error": str(e)
             }
 
-    def validar_variables_mejorado(self, traduccion: Dict) -> Dict[str, Any]:
-        """VALIDACIÓN MEJORADA - Versión a prueba de errores"""
-        try:
-            criterios = traduccion.get("criterios_demograficos", {})
-            variables = traduccion.get("variables_detectadas", [])
-            
-            validas = []
-            invalidas = []
-            
-            print(f"🔍 Validando variables: {variables}")
-            print(f"🔍 Criterios recibidos: {criterios}")
-            
-            # Validar variables que son columnas reales
-            for var in variables:
-                if var in self.df.columns:
-                    validas.append(var)
-                    print(f"✅ Variable válida (columna real): {var}")
+    def validar_variables_mejorado(self, traduccion: Dict) -> Dict:
+        """
+        VALIDA que las variables detectadas existan en el dataset
+        y que los criterios sean coherentes.
+        PERMITE GENERALES Y TABLAS CRUZADAS SIN BLOQUEAR.
+        """
+        print(f"Validando traducción: {traduccion.get('terminos_mapeados', {})}")
+        
+        variables_detectadas = traduccion.get('variables_detectadas', [])
+        criterios_demograficos = traduccion.get('criterios_demograficos', {})
+        
+        variables_validas = []
+        variables_invalidas = []
+        criterios_validos = {}
+        
+        # === COLUMNAS REALES DEL DATASET ===
+        columnas_reales = set(self.df.columns)
+        print(f"Columnas reales en dataset: {len(columnas_reales)} columnas")
+        
+        # === VALIDAR VARIABLES DETECTADAS ===
+        for var in variables_detectadas:
+            if var == 'general':
+                variables_validas.append(var)
+                print(f"Variable 'general' permitida (conteo total)")
+            elif var in columnas_reales:
+                variables_validas.append(var)
+                print(f"Variable válida: {var}")
+            else:
+                variables_invalidas.append(var)
+                print(f"Variable NO encontrada: {var}")
+        
+        # === VALIDAR CRITERIOS DEMOGRÁFICOS ===
+        for criterio, valor in criterios_demograficos.items():
+            if criterio == 'accion_general':
+                criterios_validos[criterio] = valor
+                print(f"Criterio general válido: {valor}")
+            elif criterio == 'tabla_cruzada':
+                filas = valor.get('filas')
+                columnas = valor.get('columnas')
+                if filas in columnas_reales and columnas in columnas_reales:
+                    criterios_validos[criterio] = valor
+                    print(f"Tabla cruzada válida: {filas} vs {columnas}")
                 else:
-                    # Las variables de rango_edad_X_Y no son columnas reales, son conceptos
-                    if var.startswith('rango_edad_'):
-                        print(f"✅ Concepto válido (rango edad): {var} - NO es columna pero ES válido")
-                        continue
-                    elif "multiple_carencias" in var:
-                        print(f"✅ Concepto válido (carencias múltiples): {var} - NO es columna pero ES válido")
-                        continue
-                    else:
-                        invalidas.append(var)
-                        print(f"❌ Variable inválida: {var}")
-            
-            # CORRECCIÓN CRÍTICA: Asegurar que criterios_validos sea True cuando hay criterios
-            criterios_validos = len(criterios) > 0
-            ejecutable = criterios_validos and len(invalidas) == 0
-            
-            print(f"🎯 RESULTADO VALIDACIÓN:")
-            print(f"   - Criterios válidos: {criterios_validos} (criterios: {criterios})")
-            print(f"   - Variables válidas: {validas}")
-            print(f"   - Variables inválidas: {invalidas}")
-            print(f"   - Consulta ejecutable: {ejecutable}")
-            
-            # FORZAR resultado consistente
-            resultado = {
-                "criterios": criterios,
-                "variables_validas": validas,
-                "variables_invalidas": invalidas,
-                "criterios_validos": criterios_validos,
-                "columnas_validas": len(invalidas) == 0,
-                "ejecutable": ejecutable
-            }
-            
-            print(f"✅ RETORNANDO resultado válido")
-            return resultado
-            
-        except Exception as e:
-            print(f"🔴 ERROR en validar_variables_mejorado: {str(e)}")
-            # Devolver un resultado seguro en caso de error
+                    print(f"Tabla cruzada inválida: {filas} o {columnas} no existen")
+            elif criterio == 'rango_edad':
+                if isinstance(valor, list) and len(valor) == 2:
+                    criterios_validos[criterio] = valor
+                    print(f"Rango edad válido: {valor}")
+            elif criterio == 'sexo':
+                if valor in ['Hombre', 'Mujer']:
+                    criterios_validos[criterio] = valor
+                    print(f"Sexo válido: {valor}")
+            elif criterio in ['carencia_salud', 'carencia_educacion', 'carencia_seguridad_social']:
+                criterios_validos[criterio] = valor
+                print(f"Carencia válida: {criterio} = {valor}")
+            elif criterio == 'programa_social':
+                col_programa = f"es_elegible_{valor}"
+                if col_programa in columnas_reales:
+                    criterios_validos[criterio] = valor
+                    print(f"Programa válido: {valor}")
+                else:
+                    print(f"Programa NO encontrado: {col_programa}")
+            elif criterio in ['segmentacion_geografica', 'ordenamiento']:
+                criterios_validos[criterio] = valor
+                print(f"Criterio adicional válido: {criterio} = {valor}")
+            else:
+                print(f"Criterio desconocido: {criterio}")
+
+        # === PERMITIR GENERALES Y TABLAS CRUZADAS ===
+        if 'accion_general' in criterios_validos or 'tabla_cruzada' in criterios_validos:
             return {
-                "criterios": {},
-                "variables_validas": [],
-                "variables_invalidas": [],
-                "criterios_validos": False,
-                "columnas_validas": False,
-                "ejecutable": False
+                'ejecutable': True,
+                'variables_validas': variables_validas + ['general'],
+                'variables_invalidas': [],
+                'criterios_validos': criterios_validos,
+                'estado': 'éxito_general'
             }
 
+        # === SI HAY VARIABLES VÁLIDAS, PERMITIR ===
+        if variables_validas:
+            return {
+                'ejecutable': True,
+                'variables_validas': variables_validas,
+                'variables_invalidas': variables_invalidas,
+                'criterios_validos': criterios_validos,
+                'estado': 'éxito'
+            }
+
+        # === FALLBACK: NO EJECUTABLE ===
+        return {
+            'ejecutable': False,
+            'variables_validas': variables_validas,
+            'variables_invalidas': variables_invalidas,
+            'criterios_validos': criterios_validos,
+            'estado': 'fallo_validacion'
+        }
 
     def analizar_flujo_completo(self, criterios_demograficos: Dict, 
                                segmentacion_geografica: str = None,
@@ -2649,51 +2719,53 @@ class AgenteAnaliticoLLM:
         return respuesta
 
     def procesar_consulta_mejorado(self, consulta_usuario: str) -> str:
-        """Versión mejorada con sistema de robustez"""
-        print(f"\n👤 USUARIO: {consulta_usuario}")
+        """
+        PROCEDE CON CONSULTA:
+        - Detecta ambigüedades
+        - Traduce
+        - Valida (solo si no es general)
+        - Pasa al LLM si es válida o general
+        """
+        print(f"\nUSUARIO: {consulta_usuario}")
         
         try:
-            # PASO 1: Detectar ambigüedades
+            # === 1. DETECTAR AMBIGÜEDADES ===
             analisis_ambiguedad = self.detectar_ambiguedades(consulta_usuario)
-            
             if analisis_ambiguedad['hay_ambiguedad']:
-                respuesta_clarificacion = self.generar_respuesta_clarificacion(
-                    analisis_ambiguedad['ambiguedades']
-                )
-                print("🔍 Detectada ambigüedad - solicitando clarificación")
-                return respuesta_clarificacion
-            
-            # PASO 2: Traducción de términos naturales
+                return self.generar_respuesta_clarificacion(analisis_ambiguedad['ambiguedades'])
+
+            # === 2. TRADUCCIÓN ===
             traduccion = self.analizador.traducir_consulta_natural(consulta_usuario)
-            print(f"🔍 Auto-traducción: {traduccion['terminos_mapeados']}")
-            
-            # PASO 3: Si no detecta variables, sugerencias contextuales mejoradas
-            #if traduccion['estado'] == "sin_criterios_detectados":
-                #print("🔍 Sin criterios detectados - generando sugerencias contextuales")
-                #return self._generar_sugerencias_contextuales_mejoradas(consulta_usuario)
-            
-            # PASO 4: Validación de variables detectadas
-            print(f"🔍 ANTES de validar_variables_mejorado")
-            print(f"   - Traducción: {traduccion}")
+            print(f"Auto-traducción: {traduccion.get('terminos_mapeados', {})}")
+
+            consulta_lower = consulta_usuario.lower()
+
+            # === 3. CONSULTAS GENERALES: PASAR DIRECTO AL LLM ===
+            consultas_generales = [
+                'total personas', 'cuántas personas', 'número de personas', 'cuántas hay',
+                'personas por edad', 'distribución por edad', 'por edad',
+                'personas por sexo', 'distribución por sexo', 'por sexo',
+                'por edad y sexo', 'edad y sexo', 'distribución por edad y sexo'
+            ]
+            if any(phrase in consulta_lower for phrase in consultas_generales):
+                print("CONSULTA GENERAL DETECTADA → pasando al LLM sin validación estricta")
+                return self.procesar_consulta(consulta_usuario)
+
+            # === 4. VALIDACIÓN (solo si no es general) ===
             validacion = self.analizador.validar_variables_mejorado(traduccion)
-            print(f"🔍 DESPUÉS de validar_variables_mejorado")
-            print(f"   - Validación: {validacion}")
             
             if not validacion['ejecutable']:
-                print(f"🔍 Problemas de validación: {validacion}")
                 if validacion['variables_invalidas']:
                     return self._generar_respuesta_variables_invalidas(validacion, consulta_usuario)
-                else: 
+                else:
                     return self._generar_sugerencias_contextuales_mejoradas(consulta_usuario)
 
-               
-            # PASO 5: Procesamiento normal
-            print("🔍 Consulta válida - procesando con LLM...")
+            # === 5. SI PASA: PROCESAR CON LLM ===
+            print("Consulta válida → procesando con LLM...")
             return self.procesar_consulta(consulta_usuario)
             
         except Exception as e:
-            # PASO 6: Manejo elegante de errores inesperados
-            print(f"🔴 ERROR: {type(e).__name__}: {str(e)}")
+            print(f"ERROR: {str(e)}")
             return self._generar_respuesta_error_amigable(e, consulta_usuario)
 
 # ============================================================================
