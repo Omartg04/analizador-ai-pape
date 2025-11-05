@@ -1,4 +1,4 @@
-# analizador_politica_social.py
+# analizador_politica_social.py Versión 2.0
 """
 Sistema de Análisis para Política Social - VERSIÓN MODULAR MEJORADA
 Con capacidades específicas de análisis de brechas y elegibilidad
