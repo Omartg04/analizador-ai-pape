@@ -1563,6 +1563,12 @@ class AnalizadorUnidimensional:
                         criterios['programa_social'] = mapeo['valor']
                         variables_detectadas.append(f"es_elegible_{mapeo['valor']}")
                         print(f"Aplicado programa: {mapeo['valor']} para '{termino_natural}'")
+                    # === TIPO: multiple_carencias ===
+                    elif mapeo['tipo'] == 'multiple_carencias':
+                        criterios['multiple_carencias'] = mapeo['valor']
+                        variables_detectadas.append('conteo_carencias_persona')
+                        print(f"APLICADO: {mapeo['valor']} carencias para '{termino_natural}'")
+
             # === FIN DEL FOR ===
             
             # Detectar segmentación geográfica automática
@@ -1676,7 +1682,6 @@ class AnalizadorUnidimensional:
             elif criterio in ['segmentacion_geografica', 'ordenamiento']:
                 criterios_validos[criterio] = valor
                 print(f"Criterio adicional válido: {criterio} = {valor}")
- 
             elif criterio == 'multiple_carencias':
                 if valor in [1, 2, 3, 4, 5, 6]:
                     criterios_validos[criterio] = valor
