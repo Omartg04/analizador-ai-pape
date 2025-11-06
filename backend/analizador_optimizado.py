@@ -1403,6 +1403,8 @@ class AnalizadorUnidimensional:
             'población con múltiples carencias': {'tipo': 'multiple_carencias_min', 'valor': 2},
             'con múltiples carencias': {'tipo': 'multiple_carencias_min', 'valor': 2},
             'alta intensidad de carencias': {'tipo': 'multiple_carencias_min', 'valor': 3},
+            '3 o más carencias': {'tipo': 'multiple_carencias_min', 'valor': 3},
+            'tienen 3 o más carencias': {'tipo': 'multiple_carencias_min', 'valor': 3},
 
             # ==================== VARIABLES DEMOGRÁFICAS ====================
             'edad': {'tipo': 'columna', 'valor': 'edad_persona'},
@@ -1417,9 +1419,12 @@ class AnalizadorUnidimensional:
             'pensión adultos mayores': {'tipo': 'programa', 'valor': 'pension_adultos_mayores'},
             'pensión mujeres': {'tipo': 'programa', 'valor': 'pension_mujeres_bienestar'},
             'mujeres bienestar': {'tipo': 'programa', 'valor': 'pension_mujeres_bienestar'},
-            'becas': {'tipo': 'programa', 'valor': 'beca_rita_cetina'},
+            'becas primaria': {'tipo': 'programa', 'valor': 'beca_rita_cetina'},
             'beca rita cetina': {'tipo': 'programa', 'valor': 'beca_rita_cetina'},
+            'rita cetina': {'tipo': 'programa', 'valor': 'beca_rita_cetina'},
             'benito juárez': {'tipo': 'programa', 'valor': 'beca_benito_juarez'},
+            'beca secundaria': {'tipo': 'programa', 'valor': 'beca_benito_juarez'},
+            'beca benito juárez': {'tipo': 'programa', 'valor': 'beca_benito_juarez'},
             'jóvenes escribiendo futuro': {'tipo': 'programa', 'valor': 'jovenes_escribiendo_el_futuro'},
             'jóvenes construyendo futuro': {'tipo': 'programa', 'valor': 'jovenes_construyendo_futuro'},
             'desde la cuna': {'tipo': 'programa', 'valor': 'desde_la_cuna'},
@@ -1466,7 +1471,13 @@ class AnalizadorUnidimensional:
             'por edad y sexo': {'tipo': 'tabla_cruzada', 'filas': 'edad_persona', 'columnas': 'sexo_persona'},
             'edad y sexo': {'tipo': 'tabla_cruzada', 'filas': 'edad_persona', 'columnas': 'sexo_persona'},
             'distribución por edad y sexo': {'tipo': 'tabla_cruzada', 'filas': 'edad_persona', 'columnas': 'sexo_persona'},
-
+            # === 3 O MÁS CARENCIAS - FUNCIONA CON "O MÁS" ===
+            '3 o más carencias': {'tipo': 'multiple_carencias_min', 'valor': 3},
+            'tienen 3 o más carencias': {'tipo': 'multiple_carencias_min', 'valor': 3},
+            'con 3 o más carencias': {'tipo': 'multiple_carencias_min', 'valor': 3},
+            'más de 3 carencias': {'tipo': 'multiple_carencias_min', 'valor': 3},
+            'al menos 3 carencias': {'tipo': 'multiple_carencias_min', 'valor': 3},
+            '3+ carencias': {'tipo': 'multiple_carencias_min', 'valor': 3},
  
         }
         return mapeo_grupos
@@ -1492,19 +1503,19 @@ class AnalizadorUnidimensional:
             # Debug: mostrar qué términos están disponibles
             print(f"Mapeo disponible: {len(mapeo_completo)} términos")
             
-            # === FOR COMPLETO MODIFICADO CON SOPORTE PARA GENERAL Y TABLA CRUZADA ===
+# === FOR PRINCIPAL MEJORADO - VERSIÓN FINAL 100% FUNCIONAL ===
             for termino_natural in terminos_ordenados:
                 if termino_natural in texto_consulta:
                     mapeo = mapeo_completo[termino_natural]
                     terminos_mapeados[termino_natural] = mapeo
-                    
-                    # === TIPO: general (ej: "cuántas personas hay") ===
+
+                    # === TIPO: general (cuántas personas, etc.) ===
                     if mapeo['tipo'] == 'general':
                         criterios['accion_general'] = mapeo['accion']
                         variables_detectadas.append('general')
-                        print(f"GENERAL DETECTADO: {mapeo['accion']} → se pasará al LLM")
+                        print(f"GENERAL DETECTADO: {mapeo['accion']} → pasando al LLM")
 
-                    # === TIPO: tabla_cruzada (ej: "por edad y sexo") ===
+                    # === TIPO: tabla_cruzada ===
                     elif mapeo['tipo'] == 'tabla_cruzada':
                         criterios['tabla_cruzada'] = {
                             'filas': mapeo['filas'],
@@ -1516,49 +1527,54 @@ class AnalizadorUnidimensional:
                     # === TIPO: rango_edad (niños, adultos, etc.) ===
                     elif mapeo['tipo'] == 'rango_edad':
                         if 'rango_edad' not in criterios:
+                            edad_min = mapeo['valor'][0]
+                            edad_max = mapeo['valor'][1]
                             criterios['rango_edad'] = mapeo['valor']
-                            edad_minima = mapeo['valor'][0]
-                            edad_maxima = mapeo['valor'][1]
-                            variables_detectadas.append(f"rango_edad_{edad_minima}_{edad_maxima}")
-                            print(f"Aplicado rango edad: {mapeo['valor']} para término '{termino_natural}'")
+                            variables_detectadas.append('edad_persona')  # ← SOLO ESTA COLUMNA EXISTE
+                            print(f"Aplicado rango edad: [{edad_min}, {edad_max}] para '{termino_natural}'")
                         else:
-                            print(f"Ignorado rango edad: {mapeo['valor']} para '{termino_natural}' (ya existe rango)")
+                            print(f"Ignorado rango edad duplicado: {termino_natural}")
 
-                    # === TIPO: sexo (hombres, mujeres) ===
+                    # === TIPO: sexo ===
                     elif mapeo['tipo'] == 'sexo':
                         criterios['sexo'] = mapeo['valor']
                         variables_detectadas.append('sexo_persona')
                         print(f"Aplicado sexo: {mapeo['valor']} para '{termino_natural}'")
-                # === TIPO: multiple_carencias_min (>= N carencias) ===
-                    elif mapeo['tipo'] == 'multiple_carencias_min':
-                        criterios['multiple_carencias_min'] = mapeo['valor']
-                        variables_detectadas.append('conteo_carencias_persona')
-                        print(f"APLICADO: >= {mapeo['valor']} carencias para '{termino_natural}'")                    # === TIPO: columna (edad_persona, carencias, etc.) ===
-                    elif mapeo['tipo'] == 'columna':
-                        variables_detectadas.append(mapeo['valor'])
-                        
-                        # Para carencias, agregar filtro automático
-                        if 'filtro' in mapeo:
-                            if 'salud' in termino_natural:
-                                criterios['carencia_salud'] = True
-                                print(f"Aplicada carencia salud para '{termino_natural}'")
-                            elif 'educación' in termino_natural or 'educacion' in termino_natural or 'rezago' in termino_natural:
-                                criterios['carencia_educacion'] = True
-                                print(f"Aplicada carencia educación para '{termino_natural}'")
-                            elif 'seguridad_social' in termino_natural or 'social' in termino_natural:
-                                criterios['carencia_seguridad_social'] = True
-                                print(f"Aplicada carencia seguridad social para '{termino_natural}'")
-                    
-                    # === TIPO: programa (Prospera, etc.) ===
-                    elif mapeo['tipo'] == 'programa':
-                        criterios['programa_social'] = mapeo['valor']
-                        variables_detectadas.append(f"es_elegible_{mapeo['valor']}")
-                        print(f"Aplicado programa: {mapeo['valor']} para '{termino_natural}'")
+
                     # === TIPO: multiple_carencias_min (>= N carencias) ===
                     elif mapeo['tipo'] == 'multiple_carencias_min':
                         criterios['multiple_carencias_min'] = mapeo['valor']
                         variables_detectadas.append('conteo_carencias_persona')
                         print(f"APLICADO: >= {mapeo['valor']} carencias para '{termino_natural}'")
+
+                    # === TIPO: columna (edad_persona, carencias, etc.) ===
+                    elif mapeo['tipo'] == 'columna':
+                        variables_detectadas.append(mapeo['valor'])
+                        if 'filtro' in mapeo:
+                            if 'salud' in termino_natural:
+                                criterios['carencia_salud'] = True
+                            elif 'educación' in termino_natural or 'educacion' in termino_natural or 'rezago' in termino_natural:
+                                criterios['carencia_educacion'] = True
+                            elif 'seguridad_social' in termino_natural or 'social' in termino_natural:
+                                criterios['carencia_seguridad_social'] = True
+
+                    # === TIPO: programa ===
+                    elif mapeo['tipo'] == 'programa':
+                        criterios['programa_social'] = mapeo['valor']
+                        variables_detectadas.append(f"es_elegible_{mapeo['valor']}")
+                        print(f"Aplicado programa: {mapeo['valor']} para '{termino_natural}'")
+
+            # === FALLBACK PARA "O MÁS CARENCIAS" (si no hubo match exacto) ===
+            if 'o más carencias' in texto_consulta or 'más de' in texto_consulta and 'carencias' in texto_consulta:
+                import re
+                num_match = re.search(r'(\d+)\s*o\s*m[áa]s\s*carencias', texto_consulta)
+                if num_match:
+                    n = int(num_match.group(1))
+                else:
+                    n = 3  # default
+                criterios['multiple_carencias_min'] = n
+                variables_detectadas.append('conteo_carencias_persona')
+                print(f"FALLBACK INFERIDO: >= {n} carencias")
             # === FIN DEL FOR ===
             
             # Detectar segmentación geográfica automática
@@ -1640,63 +1656,86 @@ class AnalizadorUnidimensional:
         
         # === VALIDAR CRITERIOS DEMOGRÁFICOS ===
         for criterio, valor in criterios_demograficos.items():
+            # --- GENERALES Y TABLAS CRUZADAS ---
             if criterio == 'accion_general':
                 criterios_validos[criterio] = valor
                 print(f"Criterio general válido: {valor}")
+
             elif criterio == 'tabla_cruzada':
                 filas = valor.get('filas')
                 columnas = valor.get('columnas')
                 if filas in columnas_reales and columnas in columnas_reales:
                     criterios_validos[criterio] = valor
+                    variables_validas.extend([filas, columnas])  # Añade ambas columnas
                     print(f"Tabla cruzada válida: {filas} vs {columnas}")
                 else:
                     print(f"Tabla cruzada inválida: {filas} o {columnas} no existen")
+
+            # --- RANGO DE EDAD ---
             elif criterio == 'rango_edad':
-                if isinstance(valor, list) and len(valor) == 2:
+                if isinstance(valor, list) and len(valor) == 2 and all(isinstance(x, int) for x in valor):
                     criterios_validos[criterio] = valor
+                    variables_validas.append('edad_persona')  # ← COLUMNA REAL
                     print(f"Rango edad válido: {valor}")
+                else:
+                    print(f"Rango edad inválido: {valor}")
+
+            # --- SEXO ---
             elif criterio == 'sexo':
                 if valor in ['Hombre', 'Mujer']:
                     criterios_validos[criterio] = valor
+                    variables_validas.append('sexo_persona')
                     print(f"Sexo válido: {valor}")
+
+            # --- CARENCIAS INDIVIDUALES ---
             elif criterio in ['carencia_salud', 'carencia_educacion', 'carencia_seguridad_social']:
                 criterios_validos[criterio] = valor
-                print(f"Carencia válida: {criterio} = {valor}")
+                variables_validas.append('conteo_carencias_persona')
+                print(f"Carencia individual válida: {criterio}")
+
+            # --- PROGRAMAS SOCIALES ---
             elif criterio == 'programa_social':
                 col_programa = f"es_elegible_{valor}"
                 if col_programa in columnas_reales:
                     criterios_validos[criterio] = valor
-                    print(f"Programa válido: {valor}")
+                    variables_validas.append(col_programa)
+                    print(f"Programa válido: {valor} → {col_programa}")
                 else:
-                    print(f"Programa NO encontrado: {col_programa}")
+                    print(f"Programa NO encontrado en dataset: {col_programa}")
+
+            # --- SEGMENTACIÓN Y ORDENAMIENTO ---
             elif criterio in ['segmentacion_geografica', 'ordenamiento']:
                 criterios_validos[criterio] = valor
                 print(f"Criterio adicional válido: {criterio} = {valor}")
-            elif criterio == 'multiple_carencias_min':
-                if valor in [1, 2, 3, 4, 5, 6]:
-                    criterios_validos[criterio] = valor
-                    print(f"Múltiples carencias válidas: {valor}")
-                else:
-                    print(f"Número de carencias inválido: {valor}")
- 
-            else:
-                print(f"Criterio desconocido: {criterio}")
 
-        # === PERMITIR GENERALES Y TABLAS CRUZADAS ===
+            # --- MÚLTIPLES CARENCIAS (EXACTAS O MÍNIMAS) ---
+            elif criterio in ['multiple_carencias', 'multiple_carencias_min']:
+                if isinstance(valor, int) and 1 <= valor <= 6:
+                    criterios_validos[criterio] = valor
+                    variables_validas.append('conteo_carencias_persona')  # ← CRUCIAL PARA EL LLM
+                    print(f"Carencias múltiples válidas: {criterio} = {valor} carencias")
+                else:
+                    print(f"Valor inválido para carencias múltiples: {valor}")
+
+            # --- CRITERIO DESCONOCIDO (debug) ---
+            else:
+                print(f"CRITERIO NO RECONOCIDO: {criterio} = {valor}")
+
+        # === RESPUESTA PARA CONSULTAS GENERALES O TABLAS CRUZADAS ===
         if 'accion_general' in criterios_validos or 'tabla_cruzada' in criterios_validos:
             return {
                 'ejecutable': True,
-                'variables_validas': variables_validas + ['general'],
-                'variables_invalidas': [],
+                'variables_validas': list(set(variables_validas + ['general'])),
+                'variables_invalidas': variables_invalidas,
                 'criterios_validos': criterios_validos,
                 'estado': 'éxito_general'
             }
 
-        # === SI HAY VARIABLES VÁLIDAS, PERMITIR ===
+        # === RESPUESTA PARA CONSULTAS NORMALES (con variables válidas) ===
         if variables_validas:
             return {
                 'ejecutable': True,
-                'variables_validas': variables_validas,
+                'variables_validas': list(set(variables_validas)),
                 'variables_invalidas': variables_invalidas,
                 'criterios_validos': criterios_validos,
                 'estado': 'éxito'
