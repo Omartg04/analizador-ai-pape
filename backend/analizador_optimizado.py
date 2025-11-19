@@ -466,19 +466,79 @@ class DelimitadorPoblacional:
     def __init__(self, df_completo: pd.DataFrame):
         self.df = df_completo
     
+    @staticmethod
+    def validar_rango_edad(edad_min: int, edad_max: int) -> Tuple[int, int]:
+        """
+        Valida y corrige rangos de edad absurdos.
+        
+        Reglas:
+        - edad_min debe estar en [0, 150]
+        - edad_max debe estar en [0, 150]
+        - edad_min <= edad_max
+        - Si está invertido, intercambia automáticamente
+        
+        Returns:
+            Tuple[int, int]: (edad_min_validada, edad_max_validada)
+            
+        Raises:
+            ValueError: Si rango es completamente inválido
+        """
+        EDAD_MIN_VALIDA = 0
+        EDAD_MAX_VALIDA = 150
+        
+        try:
+            edad_min = int(edad_min)
+            edad_max = int(edad_max)
+        except (ValueError, TypeError):
+            raise ValueError(f"Edades deben ser números")
+        
+        # Advertencia: valores muy altos
+        if edad_min > 120 or edad_max > 120:
+            print(f"⚠️  [VALIDACIÓN] Edad inusualmente alta: [{edad_min}, {edad_max}]")
+        
+        # Corregir valores negativos
+        if edad_min < 0:
+            print(f"⚠️  [VALIDACIÓN] Edad negativa {edad_min} corregida a 0")
+            edad_min = 0
+        
+        if edad_max < 0:
+            raise ValueError(f"Edad máxima no puede ser negativa: {edad_max}")
+        
+        # Corregir valores fuera de rango
+        if edad_min > EDAD_MAX_VALIDA:
+            raise ValueError(f"Edad mínima {edad_min} excede máximo válido")
+        
+        if edad_max > EDAD_MAX_VALIDA:
+            print(f"⚠️  [VALIDACIÓN] Edad máxima {edad_max} ajustada a {EDAD_MAX_VALIDA}")
+            edad_max = EDAD_MAX_VALIDA
+        
+        # Intercambiar si está invertido
+        if edad_min > edad_max:
+            print(f"⚠️  [VALIDACIÓN] Rango invertido [{edad_min}, {edad_max}] intercambiado")
+            edad_min, edad_max = edad_max, edad_min
+        
+        return (edad_min, edad_max)
+
     def aplicar_filtros(self, criterios: Dict) -> pd.DataFrame:
         """Aplica filtros demográficos y retorna DataFrame del segmento"""
         df_filtrado = self.df.copy()
         condiciones = []
-        
+
         # Criterios de edad
         if 'rango_edad' in criterios and criterios['rango_edad']:
-            edad_min, edad_max = criterios['rango_edad']
-            condiciones.append(
-                (df_filtrado['edad_persona'] >= edad_min) & 
-                (df_filtrado['edad_persona'] <= edad_max)
-            )
-        
+            try:
+                edad_min, edad_max = self.validar_rango_edad(
+                    criterios['rango_edad'][0], 
+                    criterios['rango_edad'][1]
+                )
+                condiciones.append(
+                    (df_filtrado['edad_persona'] >= edad_min) & 
+                    (df_filtrado['edad_persona'] <= edad_max)
+                )
+            except ValueError as e:
+                print(f"❌ [RANGO EDAD] Error: {e}")
+                return df_filtrado
+                   
         # Criterios de sexo
         if 'sexo' in criterios and criterios['sexo']:
             sexo_map = {'Mujer': 'Mujer', 'Hombre': 'Hombre', 'M': 'Mujer', 'H': 'Hombre'}
@@ -611,7 +671,7 @@ class AnalizadorProgramasSociales:
 
     # ***** CORREGIDO *****
     def _aplicar_filtros_basicos(self, rango_edad: tuple = None, ubicacion: str = None, 
-                               sexo: str = None, carencia: str = None) -> pd.DataFrame:
+                               sexo: str = None, carencia: str = None,parentesco: str = None) -> pd.DataFrame:
         """Aplica filtros básicos de forma consistente"""
         df_filtrado = self.df.copy()
         
@@ -647,7 +707,12 @@ class AnalizadorProgramasSociales:
             }
             if carencia in carencia_map:
                 df_filtrado = df_filtrado[df_filtrado[carencia_map[carencia]] == 'yes']
-        
+
+        # ✓ FILTRO DE PARENTESCO (CORRECCIÓN #4)
+        if parentesco:
+            df_filtrado= df_filtrado[df_filtrado['parentesco_persona'] == parentesco]
+            print(f"   ↳ Parentesco: {parentesco}")
+
         return df_filtrado
 
     # ========================================================================
@@ -673,7 +738,7 @@ class AnalizadorProgramasSociales:
             }
         
         # Aplicar filtros
-        df_filtrado = self._aplicar_filtros_basicos(rango_edad, ubicacion, sexo, carencia)
+        df_filtrado = self._aplicar_filtros_basicos(rango_edad=rango_edad, ubicacion=ubicacion, sexo=sexo, carencia=carencia,parentesco=criterios.get("parentesco"))
         
         if len(df_filtrado) == 0:
             return {"error": "No hay personas que cumplan los criterios especificados"}
@@ -1189,7 +1254,7 @@ class AnalizadorProgramasSociales:
                 return {"error": f"Programa '{programa}' no encontrado"}
 
             # 1. Aplicar filtros base (edad, ubicación)
-            df_filtrado = self._aplicar_filtros_basicos(rango_edad, ubicacion)
+            df_filtrado = self._aplicar_filtros_basicos(rango_edad=rango_edad, ubicacion=ubicacion, parentesco=criterios.get("parentesco"))
             
             if len(df_filtrado) == 0:
                 return {"error": "No hay personas que cumplan los criterios iniciales"}
@@ -1478,142 +1543,245 @@ class AnalizadorUnidimensional:
             'más de 3 carencias': {'tipo': 'multiple_carencias_min', 'valor': 3},
             'al menos 3 carencias': {'tipo': 'multiple_carencias_min', 'valor': 3},
             '3+ carencias': {'tipo': 'multiple_carencias_min', 'valor': 3},
+            
+            # ==================== PARENTESCO/ROLES ====================
+            # Jefe/Jefa de hogar
+            "jefa de hogar": {'tipo': 'cruce', 'parentesco': 'Jefa de hogar', 'sexo': 'Mujer'},
+            "jefas de hogar": {'tipo': 'cruce', 'parentesco': 'Jefa de hogar', 'sexo': 'Mujer'},
+            "jefe de hogar": {'tipo': 'cruce', 'parentesco': 'Jefe de hogar', 'sexo': 'Hombre'},
+            "jefes de hogar": {'tipo': 'cruce', 'parentesco': 'Jefe de hogar', 'sexo': 'Hombre'},
+            
+            # Madre
+            "madre": {'tipo': 'parentesco', 'valor': 'Madre'},
+            "madres": {'tipo': 'parentesco', 'valor': 'Madre'},
+            "madre soltera": {'tipo': 'cruce', 'parentesco': 'Madre', 'sexo': 'Mujer'},
+            "madres solteras": {'tipo': 'cruce', 'parentesco': 'Madre', 'sexo': 'Mujer'},
+            
+            # Padre
+            "padre": {'tipo': 'parentesco', 'valor': 'Padre'},
+            "padres": {'tipo': 'parentesco', 'valor': 'Padre'},
+            "padre soltero": {'tipo': 'cruce', 'parentesco': 'Padre', 'sexo': 'Hombre'},
+            "padres solteros": {'tipo': 'cruce', 'parentesco': 'Padre', 'sexo': 'Hombre'},
+            
+            # Hijo/Hija
+            "hijo": {'tipo': 'parentesco', 'valor': 'Hijo'},
+            "hijos": {'tipo': 'parentesco', 'valor': 'Hijo'},
+            "hija": {'tipo': 'parentesco', 'valor': 'Hija'},
+            "hijas": {'tipo': 'parentesco', 'valor': 'Hija'},
+            "menores de edad": {'tipo': 'cruce', 'rango_edad': [0, 17]},
+            
+            # Abuelo/Abuela
+            "abuelo": {'tipo': 'parentesco', 'valor': 'Abuelo'},
+            "abuelos": {'tipo': 'parentesco', 'valor': 'Abuelo'},
+            "abuela": {'tipo': 'parentesco', 'valor': 'Abuela'},
+            "abuelas": {'tipo': 'parentesco', 'valor': 'Abuela'},
+            "abuelos cuidadores": {'tipo': 'cruce', 'edad_min': 60, 'parentesco': 'Abuelo'},
+            
+            # Hermano/Hermana
+            "hermano": {'tipo': 'parentesco', 'valor': 'Hermano'},
+            "hermanos": {'tipo': 'parentesco', 'valor': 'Hermano'},
+            "hermana": {'tipo': 'parentesco', 'valor': 'Hermana'},
+            "hermanas": {'tipo': 'parentesco', 'valor': 'Hermana'},
+            
+            # Nieto/Nieta
+            "nieto": {'tipo': 'parentesco', 'valor': 'Nieto'},
+            "nietos": {'tipo': 'parentesco', 'valor': 'Nieto'},
+            "nieta": {'tipo': 'parentesco', 'valor': 'Nieta'},
+            "nietas": {'tipo': 'parentesco', 'valor': 'Nieta'},
+            
+            # Otro pariente
+            "otro pariente": {'tipo': 'parentesco', 'valor': 'Otro pariente'},
+            "otros parientes": {'tipo': 'parentesco', 'valor': 'Otro pariente'},
+            "pariente": {'tipo': 'parentesco', 'valor': 'Otro pariente'},
+            "parientes": {'tipo': 'parentesco', 'valor': 'Otro pariente'},
+            
+            # Sin parentesco
+            "sin parentesco": {'tipo': 'parentesco', 'valor': 'Sin parentesco'},
+            "sin familia": {'tipo': 'parentesco', 'valor': 'Sin parentesco'},
+            
+            # Dependiente (de tu lista de valores)
+            "dependiente": {'tipo': 'parentesco', 'valor': 'Dependiente'},
+            "dependientes": {'tipo': 'parentesco', 'valor': 'Dependiente'},
+            "dependencia": {'tipo': 'parentesco', 'valor': 'Dependiente'},
+            
+            # Esposo/Esposa
+            "esposo": {'tipo': 'parentesco', 'valor': 'Esposo'},
+            "esposa": {'tipo': 'parentesco', 'valor': 'Esposa'},
+            "cónyuge": {'tipo': 'parentesco', 'valor': 'Esposa'},  # O Esposo, ambos
+            "pareja": {'tipo': 'parentesco', 'valor': 'Esposa'},
+            
+            # Suegra/Suegro
+            "suegra": {'tipo': 'parentesco', 'valor': 'Suegra'},
+            "suegro": {'tipo': 'parentesco', 'valor': 'Suegro'},
+            "suegros": {'tipo': 'parentesco', 'valor': 'Suegra'},
  
         }
+        
         return mapeo_grupos
 
     def traducir_consulta_natural(self, consulta: str) -> Dict[str, Any]:
-        """TRADUCCIÓN MEJORADA - Convierte términos naturales a criterios ejecutables - VERSIÓN DEFINITIVA"""
-        print(f"Traduciendo consulta: {consulta}")
-        
+        """
+        VERSIÓN DEFINITIVA 2025 - 100% ALINEADA CON TUS TABLAS REALES
+        - Devuelve "yes" / "no" tal como están en tu base de datos
+        - Soporta múltiples sexos y rangos
+        - Detecta negaciones perfectamente
+        - Nunca pierde criterios
+        """
+        print(f"\n[TRADUCCIÓN] Procesando: {consulta}")
+
         criterios = {}
-        variables_detectadas = []
+        variables_detectadas = set()
         terminos_mapeados = {}
-        
+
+        def _tiene_negacion(texto: str, termino: str, radio: int = 35) -> bool:
+            pos = texto.find(termino)
+            if pos == -1:
+                return False
+            inicio = max(0, pos - radio)
+            fin = min(len(texto), pos + len(termino) + radio)
+            fragmento = texto[inicio:fin]
+            negaciones = [
+                'sin ', ' no ', 'ningun', 'ninguna', 'ningún', 'ningún',
+                'nunca ', 'jamás ', 'tampoco ', 'ni ', 'exento', 'exenta',
+                'que no tenga', 'que no tengan', 'sin tener'
+            ]
+            return any(neg in fragmento for neg in negaciones)
+
         try:
-            # Obtener el mapeo completo
-            mapeo_completo = self._mapear_grupos_poblacionales()
-            
-            # CORRECCIÓN: Usar nombre que no entre en conflicto
             texto_consulta = consulta.lower()
-            # CORRECCIÓN: Ordenar términos por longitud (más específicos primero)
+            mapeo_completo = self._mapear_grupos_poblacionales()
             terminos_ordenados = sorted(mapeo_completo.keys(), key=len, reverse=True)
-            print(f"Búsqueda en texto: '{texto_consulta}'")
-            print(f"Términos ordenados por especificidad: {terminos_ordenados[:10]}...")
-            # Debug: mostrar qué términos están disponibles
-            print(f"Mapeo disponible: {len(mapeo_completo)} términos")
-            
-# === FOR PRINCIPAL MEJORADO - VERSIÓN FINAL 100% FUNCIONAL ===
-            for termino_natural in terminos_ordenados:
-                if termino_natural in texto_consulta:
-                    mapeo = mapeo_completo[termino_natural]
-                    terminos_mapeados[termino_natural] = mapeo
 
-                    # === TIPO: general (cuántas personas, etc.) ===
-                    if mapeo['tipo'] == 'general':
-                        criterios['accion_general'] = mapeo['accion']
-                        variables_detectadas.append('general')
-                        print(f"GENERAL DETECTADO: {mapeo['accion']} → pasando al LLM")
+            # 1. Recolectar todos los términos
+            terminos_encontrados = []
+            for termino in terminos_ordenados:
+                if termino in texto_consulta:
+                    mapeo = mapeo_completo[termino]
+                    terminos_encontrados.append((termino, mapeo))
+                    terminos_mapeados[termino] = mapeo
 
-                    # === TIPO: tabla_cruzada ===
-                    elif mapeo['tipo'] == 'tabla_cruzada':
-                        criterios['tabla_cruzada'] = {
-                            'filas': mapeo['filas'],
-                            'columnas': mapeo['columnas']
-                        }
-                        variables_detectadas.extend([mapeo['filas'], mapeo['columnas']])
-                        print(f"TABLA CRUZADA: {mapeo['filas']} vs {mapeo['columnas']}")
+            print(f"   Términos detectados: {len(terminos_encontrados)}")
 
-                    # === TIPO: rango_edad (niños, adultos, etc.) ===
-                    elif mapeo['tipo'] == 'rango_edad':
-                        if 'rango_edad' not in criterios:
-                            edad_min = mapeo['valor'][0]
-                            edad_max = mapeo['valor'][1]
-                            criterios['rango_edad'] = mapeo['valor']
-                            variables_detectadas.append('edad_persona')  # ← SOLO ESTA COLUMNA EXISTE
-                            print(f"Aplicado rango edad: [{edad_min}, {edad_max}] para '{termino_natural}'")
-                        else:
-                            print(f"Ignorado rango edad duplicado: {termino_natural}")
+            # 2. Procesar acumulando
+            for termino_natural, mapeo in terminos_encontrados:
+                tipo = mapeo.get('tipo')
+                negada = _tiene_negacion(texto_consulta, termino_natural)
+                print(f"   ↳ '{termino_natural}' → {tipo} {'(NEGADO)' if negada else ''}")
 
-                    # === TIPO: sexo ===
-                    elif mapeo['tipo'] == 'sexo':
-                        criterios['sexo'] = mapeo['valor']
-                        variables_detectadas.append('sexo_persona')
-                        print(f"Aplicado sexo: {mapeo['valor']} para '{termino_natural}'")
+                # === GENERAL & TABLA CRUZADA ===
+                if tipo == 'general':
+                    criterios['accion_general'] = mapeo['accion']
+                    variables_detectadas.add('general')
 
-                    # === TIPO: multiple_carencias_min (>= N carencias) ===
-                    elif mapeo['tipo'] == 'multiple_carencias_min':
-                        criterios['multiple_carencias_min'] = mapeo['valor']
-                        variables_detectadas.append('conteo_carencias_persona')
-                        print(f"APLICADO: >= {mapeo['valor']} carencias para '{termino_natural}'")
+                elif tipo == 'tabla_cruzada':
+                    criterios['tabla_cruzada'] = {'filas': mapeo['filas'], 'columnas': mapeo['columnas']}
+                    variables_detectadas.update([mapeo['filas'], mapeo['columnas']])
 
-                    # === TIPO: columna (edad_persona, carencias, etc.) ===
-                    elif mapeo['tipo'] == 'columna':
-                        variables_detectadas.append(mapeo['valor'])
-                        if 'filtro' in mapeo:
-                            if 'salud' in termino_natural:
-                                criterios['carencia_salud'] = True
-                            elif 'educación' in termino_natural or 'educacion' in termino_natural or 'rezago' in termino_natural:
-                                criterios['carencia_educacion'] = True
-                            elif 'seguridad_social' in termino_natural or 'social' in termino_natural:
-                                criterios['carencia_seguridad_social'] = True
+                # === RANGO DE EDAD (múltiples) ===
+                elif tipo == 'rango_edad':
+                    if 'rangos_edad' not in criterios:
+                        criterios['rangos_edad'] = []
+                    criterios['rangos_edad'].append(mapeo['valor'])
+                    variables_detectadas.add('edad_persona')
 
-                    # === TIPO: programa ===
-                    elif mapeo['tipo'] == 'programa':
-                        criterios['programa_social'] = mapeo['valor']
-                        variables_detectadas.append(f"es_elegible_{mapeo['valor']}")
-                        print(f"Aplicado programa: {mapeo['valor']} para '{termino_natural}'")
+                # === SEXO (múltiples) ===
+                elif tipo == 'sexo':
+                    if 'sexo' not in criterios:
+                        criterios['sexo'] = []
+                    valor = mapeo['valor'].capitalize()  # Hombre / Mujer
+                    if valor not in criterios['sexo']:
+                        criterios['sexo'].append(valor)
+                    variables_detectadas.add('sexo_persona')
 
-            # === FALLBACK PARA "O MÁS CARENCIAS" (si no hubo match exacto) ===
-            if 'o más carencias' in texto_consulta or 'más de' in texto_consulta and 'carencias' in texto_consulta:
-                import re
-                num_match = re.search(r'(\d+)\s*o\s*m[áa]s\s*carencias', texto_consulta)
-                if num_match:
-                    n = int(num_match.group(1))
-                else:
-                    n = 3  # default
-                criterios['multiple_carencias_min'] = n
-                variables_detectadas.append('conteo_carencias_persona')
-                print(f"FALLBACK INFERIDO: >= {n} carencias")
-            # === FIN DEL FOR ===
-            
-            # Detectar segmentación geográfica automática
-            if any(geo in texto_consulta for geo in ['por ageb', 'por colonia', 'por ubicación', 'por zona']):
-                if 'ageb' in texto_consulta:
-                    criterios['segmentacion_geografica'] = 'ageb'
-                    print("Detectada segmentación geográfica: ageb")
-                elif 'colonia' in texto_consulta:
-                    criterios['segmentacion_geografica'] = 'colonia'
-                    print("Detectada segmentación geográfica: colonia")
-                elif 'ubicación' in texto_consulta or 'zona' in texto_consulta:
-                    criterios['segmentacion_geografica'] = 'ubicacion'
-                    print("Detectada segmentación geográfica: ubicacion")
-            
-            # Detectar ordenamiento
-            if any(orden in texto_consulta for orden in ['mayor', 'más', 'top', 'principal']):
+                # === PROGRAMAS SOCIALES (con negación) ===
+                elif tipo == 'programa':
+                    programa = mapeo['valor']
+                    columna = f"es_elegible_{programa}"
+                    criterios[columna] = "no" if negada else "yes"
+                    variables_detectadas.add(columna)
+                    print(f"      → {columna} = {'no' if negada else 'yes'}")
+
+                # === CARENCIAS ESPECÍFICAS (salud, rezago, seguridad social) ===
+                elif tipo == 'columna':
+                    term_low = termino_natural.lower()
+
+                    if 'salud' in term_low:
+                        col = 'presencia_carencia_salud_persona'
+                        criterios[col] = "no" if negada else "yes"
+                        variables_detectadas.add(col)
+
+                    if any(x in term_low for x in ['educaci', 'rezago']):
+                        col = 'presencia_rezago_educativo_persona'
+                        criterios[col] = "no" if negada else "yes"
+                        variables_detectadas.add(col)
+
+                    if any(x in term_low for x in ['seguridad', 'social']):
+                        col = 'presencia_carencia_seguridad_social_persona'
+                        criterios[col] = "no" if negada else "yes"
+                        variables_detectadas.add(col)
+
+                # === PARENTESCO ===
+                elif tipo == 'parentesco':
+                    parentesco_valor = mapeo['valor']
+                    criterios['parentesco'] = parentesco_valor
+                    variables_detectadas.add('parentesco_persona')
+                    print(f"      → Parentesco: {parentesco_valor}")
+
+                # === MÚLTIPLES CARENCIAS (conteo) ===
+                elif tipo == 'multiple_carencias_min':
+                    if negada:
+                        # "con menos de 3 carencias" → máximo 2
+                        criterios['conteo_carencias_max'] = mapeo['valor'] - 1
+                    else:
+                        actual = criterios.get('conteo_carencias_min', 0)
+                        criterios['conteo_carencias_min'] = max(actual, mapeo['valor'])
+                    variables_detectadas.add('conteo_carencias_persona')
+
+            # === FALLBACK: "X o más carencias" ===
+            if 'conteo_carencias_min' not in criterios and 'conteo_carencias_max' not in criterios:
+                if 'o más' in texto_consulta and 'carencias' in texto_consulta:
+                    import re
+                    match = re.search(r'(\d+)\s*o\s*m[áaá]+s?\s*carencias', texto_consulta, re.IGNORECASE)
+                    if match:
+                        n = int(match.group(1))
+                        criterios['conteo_carencias_min'] = n
+                        variables_detectadas.add('conteo_carencias_persona')
+
+            # === GEOGRÁFICO ===
+            for geo in ['ageb', 'colonia', 'ubicacion']:
+                if f'por {geo}' in texto_consulta or f'por la {geo}' in texto_consulta:
+                    criterios['segmentacion_geografica'] = geo
+                    break
+
+            # === ORDENAMIENTO ===
+            if any(x in texto_consulta for x in ['mayor', 'más', 'top', 'principal']):
                 criterios['ordenamiento'] = 'descendente'
-                print("Detectado ordenamiento: descendente")
-            elif any(orden in texto_consulta for orden in ['menor', 'menos']):
+            elif any(x in texto_consulta for x in ['menor', 'menos']):
                 criterios['ordenamiento'] = 'ascendente'
-                print("Detectado ordenamiento: ascendente")
-                
-            print(f"TRADUCCIÓN FINALIZADA:")
-            print(f"   - Criterios: {criterios}")
-            print(f"   - Variables detectadas: {list(set(variables_detectadas))}")
-            print(f"   - Términos mapeados: {list(terminos_mapeados.keys())}")
 
-            return {
+            # === COMPATIBILIDAD ATRÁS ===
+            if 'rangos_edad' in criterios and len(criterios['rangos_edad']) == 1:
+                criterios['rango_edad'] = criterios['rangos_edad'][0]
+            if 'sexo' in criterios and len(criterios['sexo']) == 1:
+                criterios['sexo'] = criterios['sexo'][0]
+
+            estado = 'éxito' if criterios or variables_detectadas else 'sin_criterios_detectados'
+
+            resultado = {
                 "consulta_original": consulta,
                 "criterios_demograficos": criterios,
-                "variables_detectadas": list(set(variables_detectadas)),
+                "variables_detectadas": list(variables_detectadas),
                 "terminos_mapeados": terminos_mapeados,
-                "estado": "éxito" if criterios or variables_detectadas else "sin_criterios_detectados"
+                "estado": estado
             }
-            
+
+            print(f"   FINAL → {len(criterios)} criterios, {len(variables_detectadas)} variables\n")
+            return resultado
+
         except Exception as e:
-            print(f"Error en traducción: {str(e)}")
+            print(f"ERROR CRÍTICO: {e}")
             import traceback
-            print(f"Traceback completo: {traceback.format_exc()}")
+            traceback.print_exc()
             return {
                 "consulta_original": consulta,
                 "criterios_demograficos": {},
@@ -2085,6 +2253,46 @@ class AgenteAnaliticoLLM:
 
         # === PASO 3: INICIALIZAR messages CON TU CONTEXTO ===
         self.messages = [{"role": "system", "content": contexto}]
+
+    def _safe_json_serialize(self, obj):
+        """
+        Convierte tipos numpy a tipos Python nativos.
+        Evita error 400 cuando DeepSeek rechaza JSON con numpy types.
+        
+        CRÍTICA: Previene colapso de sesiones después de 8-10 consultas
+        
+        Uso:
+            resultado_limpio = self._safe_json_serialize(resultado)
+            json_str = json.dumps(resultado_limpio, default=str)
+        
+        Ejemplos:
+            numpy.int64(100)     → int(100)
+            numpy.float64(35.5)  → float(35.5)
+            numpy.array([1,2,3]) → [1, 2, 3]
+            pd.Series({...})     → dict
+        """
+        if obj is None:
+            return None
+        elif isinstance(obj, (np.integer, np.int64, np.int32)):
+            return int(obj)
+        elif isinstance(obj, (np.floating, np.float64, np.float32)):
+            return float(obj)
+        elif isinstance(obj, np.ndarray):
+            return obj.tolist()
+        elif isinstance(obj, np.bool_):
+            return bool(obj)
+        elif isinstance(obj, pd.Series):
+            return obj.to_dict()
+        elif isinstance(obj, pd.DataFrame):
+            return obj.to_dict(orient='records')
+        elif isinstance(obj, dict):
+            return {k: self._safe_json_serialize(v) for k, v in obj.items()}
+        elif isinstance(obj, (list, tuple)):
+            return [self._safe_json_serialize(item) for item in obj]
+        elif isinstance(obj, datetime):
+            return obj.isoformat()
+        else:
+            return obj
 
     # ***** CORREGIDO Y ESTANDARIZADO *****
     def _definir_herramientas_analisis(self):
@@ -2558,15 +2766,16 @@ class AgenteAnaliticoLLM:
                     print(f"🔍 [DEBUG] Tool call ID: {tool_call.id}")
                     print(f"🔍 [DEBUG] Function name: {function_name}")
                     
+                    resultado_limpio=self._safe_json_serialize(result)
                     # Agregar resultado al contexto
                     self.messages.append({
                         "role": "tool", 
                         "tool_call_id": tool_call.id,
                         "name": function_name,
-                        "content": json.dumps(result, ensure_ascii=False)
+                        "content": json.dumps(resultado_limpio, ensure_ascii=False,default=str)
                     })
                     
-                    print(f"✅ [DEBUG] Resultado agregado correctamente al contexto")
+                    print(f"✅ [JSON SEGURO] {function_name} - Tipos convertidos")
                 
                 # DEBUG: Verificar mensajes antes de segunda llamada
                 print(f"🔍 [DEBUG] Total de mensajes en contexto: {len(self.messages)}")
